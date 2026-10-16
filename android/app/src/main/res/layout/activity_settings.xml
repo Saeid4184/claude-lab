@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/dim_24">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/toolbar_bg"
+            android:navigationIcon="@drawable/ic_arrow_back"
+            app:titleTextColor="@color/white" />
+
+        <!-- Interaction -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="@string/settings_section_interaction" />
+
+        <androidx.cardview.widget.CardView
+            style="@style/SettingsCard">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchHaptic"
+                    style="@style/SettingsSwitchRow"
+                    android:text="@string/settings_haptic" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Theme -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="@string/settings_section_theme" />
+
+        <androidx.cardview.widget.CardView
+            style="@style/SettingsCard">
+
+            <RadioGroup
+                android:id="@+id/radioGroupTheme"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingVertical="@dimen/dim_4">
+
+                <RadioButton
+                    android:id="@+id/radioThemeSystem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="@dimen/dim_16"
+                    android:paddingVertical="@dimen/dim_12"
+                    android:text="@string/settings_theme_system" />
+
+                <RadioButton
+                    android:id="@+id/radioThemeLight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="@dimen/dim_16"
+                    android:paddingVertical="@dimen/dim_12"
+                    android:text="@string/settings_theme_light" />
+
+                <RadioButton
+                    android:id="@+id/radioThemeDark"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="@dimen/dim_16"
+                    android:paddingVertical="@dimen/dim_12"
+                    android:text="@string/settings_theme_dark" />
+            </RadioGroup>
+        </androidx.cardview.widget.CardView>
+
+        <!-- AI Analysis -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="@string/settings_section_ai" />
+
+        <androidx.cardview.widget.CardView
+            style="@style/SettingsCard">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/dim_16">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/dim_10"
+                    android:text="@string/settings_ai_hint"
+                    android:textColor="@color/concrete_500"
+                    android:textSize="@dimen/text_size_12" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/settings_ai_key_hint"
+                    app:boxCornerRadiusBottomEnd="@dimen/dim_12"
+                    app:boxCornerRadiusBottomStart="@dimen/dim_12"
+                    app:boxCornerRadiusTopEnd="@dimen/dim_12"
+                    app:boxCornerRadiusTopStart="@dimen/dim_12"
+                    app:endIconMode="password_toggle">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAiApiKey"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveAiKey"
+                    style="@style/Widget.ConcreteFactory.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="@dimen/dim_10"
+                    android:text="@string/btn_save" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Users & roles (EXPERT only — hidden for everyone else in SettingsActivity) -->
+        <TextView
+            android:id="@+id/tvUsersHeader"
+            style="@style/SettingsSectionHeader"
+            android:text="@string/settings_section_users" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardUsers"
+            style="@style/SettingsCard">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/dim_16">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/dim_10"
+                    android:text="@string/settings_users_hint"
+                    android:textColor="@color/concrete_500"
+                    android:textSize="@dimen/text_size_12" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnManageUsers"
+                    style="@style/Widget.ConcreteFactory.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:text="@string/settings_manage_users" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="@string/settings_section_about" />
+
+        <androidx.cardview.widget.CardView
+            style="@style/SettingsCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="@dimen/dim_16"
+                android:text="@string/app_credit"
+                android:textColor="@color/concrete_500"
+                android:textSize="@dimen/text_size_12" />
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+</ScrollView>

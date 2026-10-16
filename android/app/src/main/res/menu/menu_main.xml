@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings_gear"
+        android:title="@string/menu_settings"
+        android:contentDescription="@string/menu_settings"
+        app:iconTint="@color/white"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_sign_out"
+        android:icon="@drawable/ic_sign_out"
+        android:title="@string/menu_sign_out"
+        android:contentDescription="@string/menu_sign_out"
+        app:iconTint="@color/white"
+        app:showAsAction="never" />
+
+</menu>
