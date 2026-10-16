@@ -80,6 +80,60 @@
         android:layout_height="@dimen/dim_6"
         android:background="@drawable/shadow_gradient_down" />
 
+    <!-- Fleet at a glance: vehicle counts by status + documents expiring soon (tap → list). -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSummary"
+        style="@style/Widget.ConcreteFactory.Card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/dim_12"
+        android:layout_marginTop="@dimen/dim_4"
+        android:layout_marginEnd="@dimen/dim_12"
+        android:clickable="true"
+        android:focusable="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/dim_12">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvCountActive"
+                    style="@style/SummaryCount"
+                    android:textColor="@color/status_green"
+                    tools:text="۴۵\nفعال" />
+
+                <TextView
+                    android:id="@+id/tvCountRepair"
+                    style="@style/SummaryCount"
+                    android:textColor="@color/safety_amber"
+                    tools:text="۲\nدر تعمیر" />
+
+                <TextView
+                    android:id="@+id/tvCountOut"
+                    style="@style/SummaryCount"
+                    android:textColor="@color/danger_red"
+                    tools:text="۱\nخارج از سرویس" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvExpiring"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dim_8"
+                android:gravity="center"
+                android:textColor="@color/concrete_700"
+                android:textSize="@dimen/text_size_13"
+                tools:text="⚠ ۳ مدرک منقضی یا در ۳۰ روز آینده منقضی می‌شود" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"

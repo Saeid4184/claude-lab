@@ -31,6 +31,9 @@ jobs:
         if: env.GOOGLE_SERVICES_JSON != ''
         run: echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
 
+      - name: Unit + screen smoke tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
 

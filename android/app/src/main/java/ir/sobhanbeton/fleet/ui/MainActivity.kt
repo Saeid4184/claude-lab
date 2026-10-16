@@ -6,17 +6,26 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.FirebaseFirestore
 import ir.sobhanbeton.fleet.R
 import ir.sobhanbeton.fleet.data.AuthRepository
+import ir.sobhanbeton.fleet.data.DriverEntity
+import ir.sobhanbeton.fleet.data.ExpiryAlerts
+import ir.sobhanbeton.fleet.data.FleetRepository
 import ir.sobhanbeton.fleet.data.Session
+import ir.sobhanbeton.fleet.data.VehicleEntity
+import ir.sobhanbeton.fleet.data.VehicleStatus
 import ir.sobhanbeton.fleet.databinding.ActivityMainBinding
+import ir.sobhanbeton.fleet.ui.drivers.DriversActivity
+import ir.sobhanbeton.fleet.ui.vehicles.VehiclesActivity
 import ir.sobhanbeton.fleet.util.AnimUtils
 import ir.sobhanbeton.fleet.util.NetworkMonitor
 import ir.sobhanbeton.fleet.util.toPersianDigits
+import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
@@ -27,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var authRepository: AuthRepository
+    private lateinit var repository: FleetRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,29 +68,69 @@ class MainActivity : AppCompatActivity() {
 
         binding.rvHomeMenu.layoutManager = LinearLayoutManager(this)
         binding.rvHomeMenu.adapter = HomeMenuAdapter(homeMenuItems) { item ->
-            item.comingInPhase?.let { phase ->
+            val phase = item.comingInPhase
+            if (phase != null) {
                 Toast.makeText(
                     this,
                     getString(R.string.home_coming_in_phase, phase.toPersianDigits(minWidth = 1)),
                     Toast.LENGTH_SHORT
                 ).show()
+                return@HomeMenuAdapter
+            }
+            when (item.destination) {
+                HomeDestination.VEHICLES -> startActivity(Intent(this, VehiclesActivity::class.java))
+                HomeDestination.DRIVERS -> startActivity(Intent(this, DriversActivity::class.java))
+                else -> Unit
             }
         }
         AnimUtils.runLayoutAnimation(binding.rvHomeMenu)
 
+        repository = FleetRepository.get(this)
+        repository.startSync()
+        observeSummary()
+        binding.cardSummary.setOnClickListener {
+            startActivity(Intent(this, ExpiringDocumentsActivity::class.java))
+        }
+
         observeConnectivity()
     }
+
+    /** The card above the menu: vehicles by status, and how many documents need attention. */
+    private fun observeSummary() {
+        var vehicles: List<VehicleEntity> = emptyList()
+        var drivers: List<DriverEntity> = emptyList()
+        fun render() {
+            val byStatus = vehicles.groupingBy { it.statusEnum() }.eachCount()
+            binding.tvCountActive.text = summaryCount(byStatus[VehicleStatus.ACTIVE] ?: 0, VehicleStatus.ACTIVE)
+            binding.tvCountRepair.text = summaryCount(byStatus[VehicleStatus.IN_REPAIR] ?: 0, VehicleStatus.IN_REPAIR)
+            binding.tvCountOut.text = summaryCount(byStatus[VehicleStatus.OUT_OF_SERVICE] ?: 0, VehicleStatus.OUT_OF_SERVICE)
+
+            val alerts = ExpiryAlerts.build(vehicles, drivers)
+            val expired = alerts.count { it.daysLeft < 0 }
+            binding.tvExpiring.text = when {
+                alerts.isEmpty() -> getString(R.string.summary_no_expiring, ExpiryAlerts.WARNING_DAYS)
+                expired > 0 -> getString(R.string.summary_expiring_with_expired, alerts.size, expired)
+                else -> getString(R.string.summary_expiring, alerts.size, ExpiryAlerts.WARNING_DAYS)
+            }.toPersianDigitsInString()
+            binding.tvExpiring.setTextColor(
+                ContextCompat.getColor(this, if (expired > 0) R.color.danger_red else if (alerts.isNotEmpty()) R.color.safety_amber else R.color.concrete_500)
+            )
+        }
+        repository.vehicles().observe(this) { vehicles = it; render() }
+        repository.drivers().observe(this) { drivers = it; render() }
+    }
+
+    private fun summaryCount(count: Int, status: VehicleStatus): String =
+        "${count.toPersianDigits(minWidth = 1)}\n${status.displayName}"
 
     private val homeMenuItems: List<HomeMenuItem> = listOf(
         HomeMenuItem(
             HomeDestination.VEHICLES, R.string.home_vehicles, R.string.home_subtitle_vehicles,
-            R.drawable.ic_machinery, R.color.accent_machinery, R.color.accent_machinery_bg,
-            comingInPhase = 1
+            R.drawable.ic_machinery, R.color.accent_machinery, R.color.accent_machinery_bg
         ),
         HomeMenuItem(
             HomeDestination.DRIVERS, R.string.home_drivers, R.string.home_subtitle_drivers,
-            R.drawable.ic_driver, R.color.accent_driver, R.color.accent_driver_bg,
-            comingInPhase = 1
+            R.drawable.ic_driver, R.color.accent_driver, R.color.accent_driver_bg
         ),
         HomeMenuItem(
             HomeDestination.FUEL, R.string.home_fuel, R.string.home_subtitle_fuel,
@@ -159,6 +209,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.sign_out_confirm_title)
             .setMessage(R.string.sign_out_confirm_message)
             .setPositiveButton(R.string.menu_sign_out) { _, _ ->
+                repository.stopSyncAndClear()
                 authRepository.signOut()
                 startActivity(Intent(this, LoginActivity::class.java))
                 finish()

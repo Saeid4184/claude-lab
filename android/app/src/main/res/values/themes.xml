@@ -136,6 +136,16 @@
         <item name="rippleColor">@color/safety_amber</item>
     </style>
 
+    <style name="SummaryCount">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">@dimen/text_size_14</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+
     <style name="CategoryTile">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">140dp</item>

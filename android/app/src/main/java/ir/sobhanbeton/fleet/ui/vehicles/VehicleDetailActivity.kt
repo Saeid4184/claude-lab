@@ -1,0 +1,238 @@
+package ir.sobhanbeton.fleet.ui.vehicles
+
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import ir.sobhanbeton.fleet.R
+import ir.sobhanbeton.fleet.data.AssignmentEntity
+import ir.sobhanbeton.fleet.data.DriverStatus
+import ir.sobhanbeton.fleet.data.ExpiryAlerts
+import ir.sobhanbeton.fleet.data.FleetRepository
+import ir.sobhanbeton.fleet.data.Session
+import ir.sobhanbeton.fleet.data.VehicleEntity
+import ir.sobhanbeton.fleet.data.VehicleStatus
+import ir.sobhanbeton.fleet.databinding.ActivityFleetDetailBinding
+import ir.sobhanbeton.fleet.ui.common.DetailSections
+import ir.sobhanbeton.fleet.ui.common.Dialogs.confirm
+import ir.sobhanbeton.fleet.ui.common.Dialogs.promptText
+import ir.sobhanbeton.fleet.ui.common.Dialogs.reportSave
+import ir.sobhanbeton.fleet.ui.common.FleetFormat
+import ir.sobhanbeton.fleet.ui.common.JalaliDatePickerDialog
+import ir.sobhanbeton.fleet.ui.drivers.DriverDetailActivity
+import ir.sobhanbeton.fleet.util.toPersianDigitsInString
+import kotlinx.coroutines.launch
+
+/** "شناسنامهٔ ماشین": everything known about one vehicle, its driver history, and (expert
+ *  only) the actions to change driver/status, edit or delete it. Later phases add its fuel,
+ *  repair and service history here. */
+class VehicleDetailActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityFleetDetailBinding
+    private lateinit var repository: FleetRepository
+    private lateinit var sections: DetailSections
+    private lateinit var vehicleId: String
+
+    private var vehicle: VehicleEntity? = null
+    private var history: List<AssignmentEntity> = emptyList()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        vehicleId = intent.getStringExtra(EXTRA_ID) ?: run { finish(); return }
+        repository = FleetRepository.get(this)
+        binding = ActivityFleetDetailBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        sections = DetailSections(binding.container)
+
+        setSupportActionBar(binding.toolbar)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
+        if (Session.canEdit()) {
+            binding.actionBar.visibility = View.VISIBLE
+            binding.btnPrimaryAction.text = getString(R.string.action_change_driver)
+            binding.btnSecondaryAction.text = getString(R.string.action_change_status)
+            binding.btnPrimaryAction.setOnClickListener { chooseDriver() }
+            binding.btnSecondaryAction.setOnClickListener { chooseStatus() }
+        }
+
+        repository.vehicle(vehicleId).observe(this) { v ->
+            if (v == null) {
+                // Deleted (here or on the other phone) — nothing left to show.
+                if (vehicle != null) finish()
+                return@observe
+            }
+            vehicle = v
+            render()
+        }
+        repository.vehicleAssignments(vehicleId).observe(this) { list ->
+            history = list
+            render()
+        }
+    }
+
+    private fun render() {
+        val v = vehicle ?: return
+        supportActionBar?.title = v.plate.toPersianDigitsInString()
+        val status = v.statusEnum()
+        val meterType = v.meterTypeEnum()
+        sections.clear()
+
+        sections.section(getString(R.string.form_section_identity))
+        sections.row(getString(R.string.field_plate), FleetFormat.text(v.plate))
+        sections.row(getString(R.string.field_category), v.categoryEnum().displayName)
+        sections.row(getString(R.string.field_group), FleetFormat.text(v.groupLabel))
+        sections.row(getString(R.string.field_brand_model), FleetFormat.text(v.brandModel))
+        sections.row(getString(R.string.field_year), FleetFormat.number(v.manufactureYear))
+        sections.row(getString(R.string.field_chassis), FleetFormat.text(v.chassisNumber))
+        sections.row(getString(R.string.field_engine), FleetFormat.text(v.engineNumber))
+
+        sections.section(getString(R.string.detail_section_status))
+        sections.row(getString(R.string.field_status), status.displayName, FleetFormat.statusColor(status))
+        v.statusNote?.let { sections.row(getString(R.string.field_status_note), it) }
+        v.statusChangedAt?.let { sections.row(getString(R.string.field_status_since), FleetFormat.date(it)) }
+        sections.row(
+            getString(R.string.field_current_driver),
+            v.currentDriverName ?: getString(R.string.no_driver),
+            onClick = v.currentDriverId?.let { id -> { DriverDetailActivity.start(this, id) } }
+        )
+
+        sections.section(getString(R.string.form_section_meter))
+        sections.row(getString(R.string.field_meter_type), meterType.displayName)
+        sections.row(
+            getString(R.string.field_current_meter),
+            v.currentMeter?.let { "${FleetFormat.number(it)} ${meterType.unit}" } ?: FleetFormat.EMPTY
+        )
+        v.meterUpdatedAt?.let { sections.row(getString(R.string.field_meter_updated), FleetFormat.date(it)) }
+
+        sections.section(getString(R.string.form_section_documents))
+        expiryRow(getString(R.string.field_third_party_expiry), v.thirdPartyInsuranceExpiry)
+        expiryRow(getString(R.string.field_body_insurance_expiry), v.bodyInsuranceExpiry)
+        expiryRow(getString(R.string.field_technical_expiry), v.technicalInspectionExpiry)
+
+        sections.section(getString(R.string.detail_section_driver_history))
+        if (history.isEmpty()) {
+            sections.note(getString(R.string.history_empty))
+        } else {
+            history.forEach { a ->
+                val period = getString(
+                    R.string.period_format,
+                    FleetFormat.date(a.startAt),
+                    a.endAt?.let { FleetFormat.date(it) } ?: getString(R.string.until_now)
+                )
+                sections.row(a.driverName, period, onClick = { DriverDetailActivity.start(this, a.driverId) })
+            }
+        }
+
+        if (!v.notes.isNullOrBlank()) {
+            sections.section(getString(R.string.form_section_other))
+            sections.row(getString(R.string.field_notes), v.notes)
+        }
+    }
+
+    private fun expiryRow(label: String, millis: Long?) {
+        val color = millis?.let { FleetFormat.daysUntil(it) }?.takeIf { it <= ExpiryAlerts.WARNING_DAYS }
+            ?.let { FleetFormat.expiryColor(it) }
+        sections.row(label, FleetFormat.expiry(millis), color)
+    }
+
+    // ------------------------------------------------------------------ expert actions
+
+    private fun chooseDriver() {
+        val v = vehicle ?: return
+        lifecycleScope.launch {
+            val drivers = repository.allDriversOnce()
+                .filter { it.statusEnum() != DriverStatus.LEFT && it.id != v.currentDriverId }
+                .sortedWith(compareBy({ it.currentVehicleId != null }, { it.name }))
+            val labels = mutableListOf<String>()
+            if (v.currentDriverId != null) labels += getString(R.string.assign_none)
+            labels += drivers.map { d ->
+                val suffix = when {
+                    d.statusEnum() == DriverStatus.SUSPENDED -> " (${DriverStatus.SUSPENDED.displayName})"
+                    d.currentVehiclePlate != null -> " — ${getString(R.string.driver_of, d.currentVehiclePlate)}"
+                    else -> ""
+                }
+                (d.name + suffix).toPersianDigitsInString()
+            }
+            if (labels.isEmpty()) {
+                android.widget.Toast.makeText(this@VehicleDetailActivity, R.string.no_drivers_to_assign, android.widget.Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            MaterialAlertDialogBuilder(this@VehicleDetailActivity)
+                .setTitle(R.string.action_change_driver)
+                .setItems(labels.toTypedArray()) { _, which ->
+                    val offset = if (v.currentDriverId != null) 1 else 0
+                    val driver = if (which < offset) null else drivers[which - offset]
+                    pickAssignmentDate(v, driver?.id, driver?.name, driver?.currentVehiclePlate)
+                }
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show()
+        }
+    }
+
+    private fun pickAssignmentDate(v: VehicleEntity, driverId: String?, driverName: String?, driverCurrentPlate: String?) {
+        JalaliDatePickerDialog.show(this, getString(R.string.assign_date_title), System.currentTimeMillis(), onPicked = { at ->
+            val message = when {
+                driverId == null -> getString(R.string.assign_confirm_none, v.currentDriverName)
+                driverCurrentPlate != null -> getString(R.string.assign_confirm_move, driverName, driverCurrentPlate, v.plate)
+                else -> getString(R.string.assign_confirm, driverName, v.plate)
+            }.toPersianDigitsInString()
+            confirm(R.string.action_change_driver, message, R.string.btn_ok) {
+                lifecycleScope.launch { reportSave(repository.assignDriver(v.id, driverId, at)) }
+            }
+        })
+    }
+
+    private fun chooseStatus() {
+        val v = vehicle ?: return
+        val statuses = VehicleStatus.values()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.action_change_status)
+            .setSingleChoiceItems(statuses.map { it.displayName }.toTypedArray(), v.statusEnum().ordinal) { dialog, which ->
+                dialog.dismiss()
+                val status = statuses[which]
+                promptText(status.displayName, R.string.field_status_note, null) { note ->
+                    lifecycleScope.launch { reportSave(repository.setVehicleStatus(v.id, status, note)) }
+                }
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        if (Session.canEdit()) {
+            menu.add(Menu.NONE, MENU_EDIT, Menu.NONE, R.string.action_edit)
+            menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
+        }
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        MENU_EDIT -> {
+            VehicleFormActivity.start(this, vehicleId)
+            true
+        }
+        MENU_DELETE -> {
+            val plate = vehicle?.plate.orEmpty()
+            confirm(R.string.action_delete, getString(R.string.vehicle_delete_confirm, plate).toPersianDigitsInString(), R.string.action_delete) {
+                lifecycleScope.launch { reportSave(repository.deleteVehicle(vehicleId)) { finish() } }
+            }
+            true
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+
+    companion object {
+        private const val EXTRA_ID = "vehicle_id"
+        private const val MENU_EDIT = 1
+        private const val MENU_DELETE = 2
+
+        fun start(context: Context, vehicleId: String) {
+            context.startActivity(Intent(context, VehicleDetailActivity::class.java).putExtra(EXTRA_ID, vehicleId))
+        }
+    }
+}

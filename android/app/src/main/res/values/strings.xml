@@ -68,4 +68,106 @@
     <string name="users_none">هنوز حساب دیگری ساخته نشده است</string>
     <string name="users_role_changed">نقش «%1$s» به «%2$s» تغییر کرد</string>
     <string name="btn_ok">باشه</string>
+    <!-- Phase 1: vehicles, drivers, assignments, documents -->
+    <string name="action_change_driver">تغییر راننده</string>
+    <string name="action_change_status">تغییر وضعیت</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_edit">ویرایش</string>
+    <string name="assign_confirm">«%1$s» از این تاریخ رانندهٔ ماشین %2$s ثبت شود؟</string>
+    <string name="assign_confirm_move">«%1$s» الان رانندهٔ ماشین %2$s است. از آن ماشین برداشته و از این تاریخ رانندهٔ ماشین %3$s ثبت شود؟</string>
+    <string name="assign_confirm_none">«%1$s» از این تاریخ از روی این ماشین برداشته شود؟</string>
+    <string name="assign_date_title">از چه تاریخی؟</string>
+    <string name="assign_none">— بدون راننده —</string>
+    <string name="btn_clear">پاک کردن</string>
+    <string name="bulk_import_title">ورود گروهی ناوگان و رانندگان</string>
+    <string name="bulk_import_hint">هر خط یک ماشین: «پلاک | گروه یا مدل | نام راننده». گروه و راننده اختیاری‌اند. برای رانندهٔ بدون ماشین: «| | نام راننده». موارد تکراری دوباره ساخته نمی‌شوند، پس اجرای دوباره بی‌خطر است.</string>
+    <string name="bulk_import_field">متن فهرست را این‌جا جای‌گذاری کنید</string>
+    <string name="bulk_import_check">بررسی</string>
+    <string name="bulk_import_run">ثبت</string>
+    <string name="bulk_import_empty">متنی وارد نشده است</string>
+    <string name="bulk_import_preview">%1$d خط معتبر: %2$d ماشین و %3$d راننده.</string>
+    <string name="bulk_import_errors">%1$d خط نادیده گرفته می‌شود:</string>
+    <string name="bulk_import_done">ورود گروهی انجام شد</string>
+    <string name="bulk_import_summary">ماشین‌های جدید: %1$d (از قبل موجود: %2$d)\nرانندگان جدید: %3$d (از قبل موجود: %4$d)\nتخصیص راننده به ماشین: %5$d</string>
+    <string name="detail_section_driver_history">سابقهٔ رانندگان</string>
+    <string name="detail_section_status">وضعیت و راننده</string>
+    <string name="detail_section_vehicle_history">سابقهٔ ماشین‌ها</string>
+    <string name="driver_add">رانندهٔ جدید</string>
+    <string name="driver_edit">ویرایش راننده</string>
+    <string name="driver_delete_confirm">«%1$s» از فهرست رانندگان حذف شود؟ سابقهٔ تخصیص‌های او باقی می‌ماند. اگر فقط دیگر همکاری نمی‌کند، به‌جای حذف وضعیتش را «قطع همکاری» کنید.</string>
+    <string name="driver_left_confirm">«%1$s» از ماشین %2$s برداشته می‌شود. ادامه می‌دهید؟</string>
+    <string name="driver_of">رانندهٔ %1$s</string>
+    <string name="driver_prefix">راننده: %1$s</string>
+    <string name="drivers_empty">هنوز راننده‌ای ثبت نشده است</string>
+    <string name="drivers_empty_expert">هنوز راننده‌ای ثبت نشده است. با دکمهٔ پایین اضافه کنید، یا از صفحهٔ ماشین‌آلات ← ⋮ ← ورود گروهی کل فهرست را یکجا وارد کنید.</string>
+    <string name="drivers_group_category">رانندگان %1$s</string>
+    <string name="drivers_group_left">قطع همکاری</string>
+    <string name="drivers_group_unassigned">بدون ماشین</string>
+    <string name="drivers_summary">%1$d راننده — %2$d فعال، %3$d فعالِ بدون ماشین</string>
+    <string name="error_number">فقط عدد وارد کنید</string>
+    <string name="error_required">این فیلد الزامی است</string>
+    <string name="expiring_title">مدارک در حال انقضا</string>
+    <string name="expiring_empty">هیچ مدرکی منقضی نشده و در %1$d روز آینده هم منقضی نمی‌شود</string>
+    <string name="expiring_group_expired">منقضی‌شده (%1$d)</string>
+    <string name="expiring_group_upcoming">%1$d روز آینده (%2$d)</string>
+    <string name="field_body_insurance_expiry">انقضای بیمهٔ بدنه</string>
+    <string name="field_brand_model">برند و مدل</string>
+    <string name="field_category">دسته</string>
+    <string name="field_chassis">شمارهٔ شاسی</string>
+    <string name="field_current_driver">رانندهٔ فعلی</string>
+    <string name="field_current_meter">کارکرد فعلی</string>
+    <string name="field_current_vehicle">ماشین فعلی</string>
+    <string name="field_driver_name">نام و نام خانوادگی</string>
+    <string name="field_engine">شمارهٔ موتور</string>
+    <string name="field_group">گروه (مثلاً میکسر - آمیکو)</string>
+    <string name="field_health_card_expiry">انقضای کارت سلامت</string>
+    <string name="field_license_expiry">انقضای گواهی‌نامه</string>
+    <string name="field_license_number">شمارهٔ گواهی‌نامه</string>
+    <string name="field_license_type">نوع گواهی‌نامه</string>
+    <string name="field_meter_type">نوع کارکرد</string>
+    <string name="field_meter_updated">آخرین ثبت کارکرد</string>
+    <string name="field_national_code">کد ملی</string>
+    <string name="field_notes">توضیحات</string>
+    <string name="field_phone">تلفن همراه</string>
+    <string name="field_plate">شمارهٔ پلاک</string>
+    <string name="field_smart_card_expiry">انقضای کارت هوشمند</string>
+    <string name="field_status">وضعیت</string>
+    <string name="field_status_note">علت / توضیح (اختیاری)</string>
+    <string name="field_status_since">از تاریخ</string>
+    <string name="field_technical_expiry">انقضای معاینهٔ فنی</string>
+    <string name="field_third_party_expiry">انقضای بیمهٔ شخص ثالث</string>
+    <string name="field_year">سال ساخت</string>
+    <string name="filter_all">همه</string>
+    <string name="form_section_documents">مدارک و سررسیدها</string>
+    <string name="form_section_identity">مشخصات</string>
+    <string name="form_section_meter">کارکرد</string>
+    <string name="form_section_other">سایر</string>
+    <string name="history_empty">هنوز سابقه‌ای ثبت نشده است</string>
+    <string name="list_no_match">موردی با این جستجو یا فیلتر پیدا نشد</string>
+    <string name="list_search_hint">جستجو</string>
+    <string name="no_driver">بدون راننده</string>
+    <string name="no_drivers_to_assign">رانندهٔ فعالی برای انتخاب وجود ندارد؛ اول از بخش رانندگان اضافه کنید</string>
+    <string name="no_vehicle">بدون ماشین</string>
+    <string name="period_format">%1$s تا %2$s</string>
+    <string name="saved">ذخیره شد</string>
+    <string name="saved_offline">روی گوشی ذخیره شد؛ پس از اتصال به اینترنت خودکار ارسال می‌شود</string>
+    <string name="summary_expiring">⚠ %1$d مدرک تا %2$d روز آینده منقضی می‌شود</string>
+    <string name="summary_expiring_with_expired">⛔ %1$d مدرک نیاز به پیگیری دارد (%2$d منقضی‌شده)</string>
+    <string name="summary_no_expiring">✅ هیچ مدرکی تا %1$d روز آینده منقضی نمی‌شود</string>
+    <string name="until_now">اکنون</string>
+    <string name="vehicle_add">ماشین جدید</string>
+    <string name="vehicle_edit">ویرایش ماشین</string>
+    <string name="vehicle_delete_confirm">ماشین %1$s از فهرست حذف شود؟ سابقهٔ رانندگانش باقی می‌ماند. اگر فقط از کار افتاده، به‌جای حذف وضعیتش را «خارج از سرویس» کنید.</string>
+    <string name="vehicle_prefix">ماشین %1$s</string>
+    <string name="vehicles_empty">هنوز ماشینی ثبت نشده است</string>
+    <string name="vehicles_empty_expert">هنوز ماشینی ثبت نشده است. با دکمهٔ پایین اضافه کنید، یا از ⋮ ← ورود گروهی کل فهرست را یکجا وارد کنید.</string>
+    <string name="vehicles_summary">%1$d ماشین — %2$d فعال، %3$d در تعمیر، %4$d خارج از سرویس</string>
+
+    <string-array name="license_types">
+        <item>پایه یکم</item>
+        <item>پایه دوم</item>
+        <item>پایه سوم</item>
+        <item>ویژه</item>
+        <item>ماشین‌آلات راهسازی</item>
+    </string-array>
 </resources>

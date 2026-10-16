@@ -46,6 +46,44 @@
             android:label="@string/settings_title"
             android:parentActivityName=".ui.MainActivity" />
 
+        <activity
+            android:name=".ui.vehicles.VehiclesActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.vehicles.VehicleDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.vehicles.VehicleFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.drivers.DriversActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.drivers.DriverDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.drivers.DriverFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.BulkImportActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.ExpiringDocumentsActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

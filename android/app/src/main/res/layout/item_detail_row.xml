@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/dim_16"
+    android:paddingTop="@dimen/dim_10"
+    android:paddingEnd="@dimen/dim_16"
+    android:paddingBottom="@dimen/dim_10">
+
+    <TextView
+        android:id="@+id/tvLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:textColor="@color/concrete_500"
+        android:textSize="@dimen/text_size_13"
+        tools:text="بیمهٔ شخص ثالث" />
+
+    <TextView
+        android:id="@+id/tvValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="3"
+        android:textColor="@color/concrete_900"
+        android:textIsSelectable="true"
+        android:textSize="@dimen/text_size_14"
+        tools:text="۱۴۰۵/۰۸/۲۰ (۱۲ روز مانده)" />
+</LinearLayout>

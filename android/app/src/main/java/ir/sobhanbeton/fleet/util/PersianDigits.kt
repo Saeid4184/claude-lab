@@ -7,7 +7,7 @@ fun Int.toPersianDigits(minWidth: Int = 2): String {
     val raw = this.toString().padStart(minWidth, '0')
     val sb = StringBuilder(raw.length)
     for (c in raw) {
-        sb.append(if (c.isDigit()) PERSIAN_DIGITS[c - '0'] else c)
+        sb.append(if (c in '0'..'9') PERSIAN_DIGITS[c - '0'] else c)
     }
     return sb.toString()
 }
@@ -16,13 +16,15 @@ fun Int.toPersianDigits(minWidth: Int = 2): String {
 fun String.toPersianDigitsInString(): String {
     val sb = StringBuilder(this.length)
     for (c in this) {
-        sb.append(if (c.isDigit()) PERSIAN_DIGITS[c - '0'] else c)
+        // Only ASCII digits: Char.isDigit() is also true for '۰'..'۹' themselves, which would
+        // index PERSIAN_DIGITS out of bounds on text that's already (partly) Persian.
+        sb.append(if (c in '0'..'9') PERSIAN_DIGITS[c - '0'] else c)
     }
     return sb.toString()
 }
 
 /** Extracts just the digits from a string, normalizing any Persian-Indic digits to plain
- *  '0'-'9' along the way (e.g. "پلاک ۶۹۷۴۴" -> "69744"). Used to match an AI-read plate number
+ *  '0'-'9' along the way (e.g. "پلاک ۱۲۳۴۵" -> "12345"). Used to match an AI-read plate number
  *  against roster names regardless of digit script or surrounding text/prefix. */
 fun String.extractDigits(): String {
     val sb = StringBuilder()

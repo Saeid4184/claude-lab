@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardRoot"
+    style="@style/Widget.ConcreteFactory.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/dim_10"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/dim_14">
+
+        <FrameLayout
+            android:id="@+id/iconChip"
+            android:layout_width="@dimen/dim_44"
+            android:layout_height="@dimen/dim_44"
+            android:background="@drawable/bg_icon_circle">
+
+            <ImageView
+                android:id="@+id/ivIcon"
+                android:layout_width="@dimen/dim_22"
+                android:layout_height="@dimen/dim_22"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dim_14"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/concrete_900"
+                android:textSize="@dimen/text_size_16"
+                android:textStyle="bold"
+                tools:text="۶۹۷۴۴" />
+
+            <TextView
+                android:id="@+id/tvSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dim_2"
+                android:textColor="@color/concrete_500"
+                android:textSize="@dimen/text_size_13"
+                tools:text="میکسر - آمیکو · راننده: —" />
+
+            <TextView
+                android:id="@+id/tvWarning"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dim_2"
+                android:textColor="@color/safety_amber"
+                android:textSize="@dimen/text_size_12"
+                android:visibility="gone"
+                tools:text="⚠ بیمهٔ شخص ثالث: ۱۲ روز مانده"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dim_8"
+            android:background="@drawable/bg_action_button"
+            android:paddingStart="@dimen/dim_10"
+            android:paddingTop="@dimen/dim_4"
+            android:paddingEnd="@dimen/dim_10"
+            android:paddingBottom="@dimen/dim_4"
+            android:textColor="@color/white"
+            android:textSize="@dimen/text_size_12"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="در تعمیر"
+            tools:visibility="visible" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared list screen: vehicles, drivers and expiring documents all use this layout. -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/toolbar_bg"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:titleTextColor="@color/white" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dim_6"
+            android:background="@drawable/shadow_gradient_down" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSearch"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dim_12"
+            android:layout_marginEnd="@dimen/dim_12"
+            android:hint="@string/list_search_hint"
+            app:boxCornerRadiusBottomEnd="@dimen/dim_12"
+            app:boxCornerRadiusBottomStart="@dimen/dim_12"
+            app:boxCornerRadiusTopEnd="@dimen/dim_12"
+            app:boxCornerRadiusTopStart="@dimen/dim_12"
+            app:endIconMode="clear_text"
+            app:startIconDrawable="@drawable/ic_search">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionSearch"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/chipScroller"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/dim_12"
+                android:paddingEnd="@dimen/dim_12"
+                app:selectionRequired="true"
+                app:singleLine="true"
+                app:singleSelection="true" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/tvSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/dim_16"
+            android:paddingEnd="@dimen/dim_16"
+            android:paddingBottom="@dimen/dim_4"
+            android:textColor="@color/concrete_500"
+            android:textSize="@dimen/text_size_12"
+            tools:text="۴۸ ماشین — ۴۵ فعال، ۲ در تعمیر" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/dim_12"
+                android:paddingTop="@dimen/dim_4"
+                android:paddingEnd="@dimen/dim_12"
+                android:paddingBottom="@dimen/dim_90"
+                tools:listitem="@layout/item_fleet_entry" />
+
+            <TextView
+                android:id="@+id/tvEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="@dimen/dim_24"
+                android:textColor="@color/concrete_500"
+                android:textSize="@dimen/text_size_14"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="@dimen/dim_16"
+        android:backgroundTint="@color/safety_amber"
+        android:textColor="@color/black"
+        android:visibility="gone"
+        app:icon="@drawable/ic_plus"
+        app:iconTint="@color/black" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
