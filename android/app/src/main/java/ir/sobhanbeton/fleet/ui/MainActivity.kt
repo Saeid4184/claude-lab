@@ -23,6 +23,9 @@ import ir.sobhanbeton.fleet.data.VehicleEntity
 import ir.sobhanbeton.fleet.data.VehicleStatus
 import ir.sobhanbeton.fleet.databinding.ActivityMainBinding
 import ir.sobhanbeton.fleet.ui.drivers.DriversActivity
+import ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity
+import ir.sobhanbeton.fleet.ui.inspections.InspectionsActivity
+import ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity
 import ir.sobhanbeton.fleet.ui.fuel.FuelActivity
 import ir.sobhanbeton.fleet.ui.vehicles.VehiclesActivity
 import ir.sobhanbeton.fleet.util.AnimUtils
@@ -85,6 +88,9 @@ class MainActivity : AppCompatActivity() {
                 HomeDestination.VEHICLES -> startActivity(Intent(this, VehiclesActivity::class.java))
                 HomeDestination.DRIVERS -> startActivity(Intent(this, DriversActivity::class.java))
                 HomeDestination.FUEL -> startActivity(Intent(this, FuelActivity::class.java))
+                HomeDestination.INSPECTIONS -> startActivity(Intent(this, InspectionsActivity::class.java))
+                HomeDestination.REPAIRS -> startActivity(Intent(this, WorkOrdersActivity::class.java))
+                HomeDestination.EXPENSES -> startActivity(Intent(this, ExpenseNotesActivity::class.java))
                 else -> Unit
             }
         }
@@ -144,7 +150,7 @@ class MainActivity : AppCompatActivity() {
     private fun summaryCount(count: Int, status: VehicleStatus): String =
         "${count.toPersianDigits(minWidth = 1)}\n${status.displayName}"
 
-    private val homeMenuItems: List<HomeMenuItem> = listOf(
+    private val homeMenuItems: List<HomeMenuItem> = listOfNotNull(
         HomeMenuItem(
             HomeDestination.VEHICLES, R.string.home_vehicles, R.string.home_subtitle_vehicles,
             R.drawable.ic_machinery, R.color.accent_machinery, R.color.accent_machinery_bg
@@ -158,9 +164,12 @@ class MainActivity : AppCompatActivity() {
             R.drawable.ic_inventory, R.color.accent_item_log, R.color.accent_item_log_bg
         ),
         HomeMenuItem(
+            HomeDestination.INSPECTIONS, R.string.home_inspections, R.string.home_subtitle_inspections,
+            R.drawable.ic_inspection, R.color.accent_inspection, R.color.accent_inspection_bg
+        ),
+        HomeMenuItem(
             HomeDestination.REPAIRS, R.string.home_repairs, R.string.home_subtitle_repairs,
-            R.drawable.ic_inspection, R.color.accent_inspection, R.color.accent_inspection_bg,
-            comingInPhase = 3
+            R.drawable.ic_settings_gear, R.color.accent_report, R.color.accent_report_bg
         ),
         HomeMenuItem(
             HomeDestination.SERVICES, R.string.home_services, R.string.home_subtitle_services,
@@ -181,7 +190,12 @@ class MainActivity : AppCompatActivity() {
             HomeDestination.REPORTS, R.string.home_reports, R.string.home_subtitle_reports,
             R.drawable.ic_dashboard, R.color.accent_machinery, R.color.accent_machinery_bg,
             comingInPhase = 6
-        )
+        ),
+        // Private: only the expert sees (and can open) the expense notebook.
+        HomeMenuItem(
+            HomeDestination.EXPENSES, R.string.home_expenses, R.string.home_subtitle_expenses,
+            R.drawable.ic_report, R.color.accent_personnel, R.color.accent_personnel_bg
+        ).takeIf { Session.canEdit() }
     )
 
     /**

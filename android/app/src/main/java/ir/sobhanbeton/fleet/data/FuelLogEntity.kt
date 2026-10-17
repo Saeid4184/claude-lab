@@ -22,7 +22,7 @@ enum class FuelSource(val displayName: String) {
  *
  * [vehiclePlate]/[category] and [driverId]/[driverName] are copied at entry time (the driver from
  * the vehicle's assignment on [timestamp]), so history stays right after reassignments or edits.
- * [totalCost] is in Rial, optional.
+ * No money fields: costs are kept only in the expert's private expense notes.
  */
 @Entity(
     tableName = "fuel_logs",
@@ -41,7 +41,6 @@ data class FuelLogEntity(
     val liters: Double = 0.0,
     val meterReading: Long? = null,
     val source: String = FuelSource.INTERNAL_TANK.name,
-    val totalCost: Long? = null,
     val notes: String? = null,
     val performedByName: String? = null,
     val createdAt: Long = 0L

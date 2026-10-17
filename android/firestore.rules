@@ -60,11 +60,17 @@ service cloud.firestore {
       allow write: if isExpert();
     }
 
-    // Everything else (vehicles, drivers, fuel, repairs, … added phase by phase): approved users
-    // read, only the expert writes.
+    // expenseNotes: the expert's private expense notebook — nobody else, the manager included,
+    // can read it.
+    match /expenseNotes/{docId} {
+      allow read, write: if isExpert();
+    }
+
+    // Everything else (vehicles, drivers, fuel, inspections, repairs, … added phase by phase):
+    // approved users read, only the expert writes.
     match /{collection}/{docId} {
-      allow read: if isApproved() && !(collection in ["users", "meta", "settings"]);
-      allow write: if isExpert() && !(collection in ["users", "meta", "settings"]);
+      allow read: if isApproved() && !(collection in ["users", "meta", "settings", "expenseNotes"]);
+      allow write: if isExpert() && !(collection in ["users", "meta", "settings", "expenseNotes"]);
     }
   }
 }

@@ -108,3 +108,85 @@ interface FuelLogDao {
     @Query("DELETE FROM fuel_logs")
     suspend fun clear()
 }
+
+@Dao
+interface InspectionDao {
+    @Query("SELECT * FROM inspections ORDER BY timestamp DESC")
+    fun getAllLive(): LiveData<List<InspectionEntity>>
+
+    @Query("SELECT * FROM inspections WHERE vehicleId = :vehicleId ORDER BY timestamp DESC")
+    fun getForVehicleLive(vehicleId: String): LiveData<List<InspectionEntity>>
+
+    @Query("SELECT * FROM inspections WHERE id = :id")
+    suspend fun getById(id: String): InspectionEntity?
+
+    @Query("SELECT * FROM inspections WHERE vehicleId = :vehicleId ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestForVehicle(vehicleId: String): InspectionEntity?
+
+    /** The vehicle's inspection before [excludeId] (the one being corrected). */
+    @Query("SELECT * FROM inspections WHERE vehicleId = :vehicleId AND id != :excludeId AND timestamp <= (SELECT timestamp FROM inspections WHERE id = :excludeId) ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getPreviousExcluding(vehicleId: String, excludeId: String): InspectionEntity?
+
+    @Query("SELECT * FROM inspections WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp")
+    suspend fun getInRange(from: Long, to: Long): List<InspectionEntity>
+
+    @Upsert
+    suspend fun upsert(inspection: InspectionEntity)
+
+    @Query("DELETE FROM inspections WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM inspections")
+    suspend fun clear()
+}
+
+@Dao
+interface WorkOrderDao {
+    @Query("SELECT * FROM work_orders ORDER BY reportedAt DESC")
+    fun getAllLive(): LiveData<List<WorkOrderEntity>>
+
+    @Query("SELECT * FROM work_orders WHERE vehicleId = :vehicleId ORDER BY reportedAt DESC")
+    fun getForVehicleLive(vehicleId: String): LiveData<List<WorkOrderEntity>>
+
+    @Query("SELECT * FROM work_orders WHERE vehicleId = :vehicleId AND status != 'DONE'")
+    suspend fun getOpenForVehicle(vehicleId: String): List<WorkOrderEntity>
+
+    @Query("SELECT * FROM work_orders WHERE id = :id")
+    suspend fun getById(id: String): WorkOrderEntity?
+
+    @Query("SELECT * FROM work_orders WHERE id = :id")
+    fun getByIdLive(id: String): LiveData<WorkOrderEntity?>
+
+    @Query("SELECT * FROM work_orders WHERE sourceInspectionId = :inspectionId AND sourcePartName = :partName AND status != 'DONE' LIMIT 1")
+    suspend fun getOpenForDefect(inspectionId: String, partName: String): WorkOrderEntity?
+
+    @Query("SELECT * FROM work_orders WHERE reportedAt BETWEEN :from AND :to ORDER BY reportedAt")
+    suspend fun getInRange(from: Long, to: Long): List<WorkOrderEntity>
+
+    @Upsert
+    suspend fun upsert(order: WorkOrderEntity)
+
+    @Query("DELETE FROM work_orders WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM work_orders")
+    suspend fun clear()
+}
+
+@Dao
+interface ExpenseNoteDao {
+    @Query("SELECT * FROM expense_notes WHERE date BETWEEN :from AND :to ORDER BY date DESC, createdAt DESC")
+    fun getInRangeLive(from: Long, to: Long): LiveData<List<ExpenseNoteEntity>>
+
+    @Query("SELECT * FROM expense_notes WHERE id = :id")
+    suspend fun getById(id: String): ExpenseNoteEntity?
+
+    @Upsert
+    suspend fun upsert(note: ExpenseNoteEntity)
+
+    @Query("DELETE FROM expense_notes WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM expense_notes")
+    suspend fun clear()
+}

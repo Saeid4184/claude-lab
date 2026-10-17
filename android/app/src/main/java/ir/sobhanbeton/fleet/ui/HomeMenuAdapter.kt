@@ -13,7 +13,7 @@ import ir.sobhanbeton.fleet.util.toPersianDigits
 
 /** The sections reachable from the home menu, in roadmap order. */
 enum class HomeDestination {
-    VEHICLES, DRIVERS, FUEL, REPAIRS, SERVICES, DAILY_WORK, INCIDENTS, REPORTS
+    VEHICLES, DRIVERS, FUEL, INSPECTIONS, REPAIRS, SERVICES, DAILY_WORK, INCIDENTS, REPORTS, EXPENSES
 }
 
 data class HomeMenuItem(

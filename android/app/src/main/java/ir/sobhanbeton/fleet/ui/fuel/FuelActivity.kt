@@ -164,12 +164,10 @@ class FuelActivity : AppCompatActivity() {
 
         binding.tvEmpty.visibility = if (visible.isEmpty() && anomalies.isEmpty()) View.VISIBLE else View.GONE
         binding.tvEmpty.text = getString(if (logs.isEmpty()) R.string.fuel_empty else R.string.list_no_match)
-        val totalCost = visible.sumOf { it.totalCost ?: 0L }
         binding.tvSummary.text = buildString {
             append(getString(R.string.range_format, FleetFormat.date(rangeStart), FleetFormat.date(rangeEnd)))
             append(" — ")
             append(getString(R.string.liters_format, FuelFormActivity.formatLiters(visible.sumOf { it.liters })))
-            if (totalCost > 0) append(" · ").append(getString(R.string.rial_format, "%,d".format(totalCost)))
         }.toPersianDigitsInString()
     }
 
@@ -221,7 +219,7 @@ class FuelActivity : AppCompatActivity() {
         }
         val fills = XlsxWriter.Sheet(
             getString(R.string.fuel_view_fills),
-            listOf("تاریخ", "پلاک", "دسته", "گروه", "راننده", "لیتر", "کارکرد", "منبع", "مبلغ (ریال)", "توضیحات", "ثبت‌کننده"),
+            listOf("تاریخ", "پلاک", "دسته", "گروه", "راننده", "لیتر", "کارکرد", "منبع", "توضیحات", "ثبت‌کننده"),
             logs.sortedBy { it.timestamp }.map { log ->
                 val v = vehiclesById[log.vehicleId]
                 listOf(
@@ -233,7 +231,6 @@ class FuelActivity : AppCompatActivity() {
                     FuelFormActivity.formatLiters(log.liters),
                     log.meterReading?.toString().orEmpty(),
                     log.sourceEnum().displayName,
-                    log.totalCost?.toString().orEmpty(),
                     log.notes.orEmpty(),
                     log.performedByName.orEmpty()
                 )
@@ -241,7 +238,7 @@ class FuelActivity : AppCompatActivity() {
         )
         val perVehicleSheet = XlsxWriter.Sheet(
             getString(R.string.fuel_view_per_vehicle),
-            listOf("پلاک", "گروه", "تعداد سوخت‌گیری", "جمع لیتر", "جمع مبلغ (ریال)", "مسافت/ساعت پیموده‌شده", "میانگین مصرف", "واحد مصرف"),
+            listOf("پلاک", "گروه", "تعداد سوخت‌گیری", "جمع لیتر", "مسافت/ساعت پیموده‌شده", "میانگین مصرف", "واحد مصرف"),
             FuelStats.summarize(logs, vehiclesById).map { s ->
                 val c = s.consumption
                 listOf(
@@ -249,7 +246,6 @@ class FuelActivity : AppCompatActivity() {
                     vehiclesById[s.vehicleId]?.groupLabel.orEmpty(),
                     s.fills.toString(),
                     FuelFormActivity.formatLiters(s.liters),
-                    s.cost.toString(),
                     c?.distance?.toString().orEmpty(),
                     c?.let { "%.1f".format(java.util.Locale.US, it.rate) }.orEmpty(),
                     c?.let { if (it.meterType == MeterType.KM) "لیتر در ۱۰۰ کیلومتر" else "لیتر در ساعت" }.orEmpty()

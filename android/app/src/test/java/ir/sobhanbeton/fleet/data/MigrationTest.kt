@@ -43,9 +43,28 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate2To3_keepsFuelRowsWithoutCost() {
+        helper.createDatabase(DB, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO fuel_logs (id, vehicleId, vehiclePlate, category, timestamp, liters, meterReading, source, totalCost, createdAt) " +
+                    "VALUES ('f1', 'v1', '12345', 'MIXER', 5, 80.0, 1000, 'STATION', 999, 5)"
+            )
+        }
+        helper.runMigrationsAndValidate(DB, 3, true, MIGRATION_2_3).use { db ->
+            db.query("SELECT liters, meterReading, source FROM fuel_logs WHERE id = 'f1'").use { c ->
+                c.moveToFirst()
+                assertEquals(80.0, c.getDouble(0), 0.001)
+                assertEquals(1000L, c.getLong(1))
+                assertEquals("STATION", c.getString(2))
+                assertEquals(-1, c.getColumnIndex("totalCost"))
+            }
+        }
+    }
+
+    @Test
     fun allMigrationsReachLatestVersion() {
         helper.createDatabase(DB, 1).close()
-        helper.runMigrationsAndValidate(DB, 2, true, *ALL_MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB, 3, true, *ALL_MIGRATIONS).close()
     }
 
     private companion object {

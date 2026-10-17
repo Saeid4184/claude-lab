@@ -38,6 +38,19 @@ class CloudSync(private val db: AppDatabase) {
         listeners += mirror(COLLECTION_FUEL_LOGS,
             upsert = { db.fuelLogDao().upsert(it.toObject(FuelLogEntity::class.java)!!) },
             delete = { db.fuelLogDao().deleteById(it) })
+        listeners += mirror(COLLECTION_INSPECTIONS,
+            upsert = { db.inspectionDao().upsert(it.toObject(InspectionEntity::class.java)!!) },
+            delete = { db.inspectionDao().deleteById(it) })
+        listeners += mirror(COLLECTION_WORK_ORDERS,
+            upsert = { db.workOrderDao().upsert(it.toObject(WorkOrderEntity::class.java)!!) },
+            delete = { db.workOrderDao().deleteById(it) })
+        // Private to the expert: never mirrored onto the manager's phone (rules would refuse
+        // the read anyway).
+        if (Session.canEdit()) {
+            listeners += mirror(COLLECTION_EXPENSE_NOTES,
+                upsert = { db.expenseNoteDao().upsert(it.toObject(ExpenseNoteEntity::class.java)!!) },
+                delete = { db.expenseNoteDao().deleteById(it) })
+        }
     }
 
     @Synchronized
@@ -54,6 +67,9 @@ class CloudSync(private val db: AppDatabase) {
             db.driverDao().clear()
             db.assignmentDao().clear()
             db.fuelLogDao().clear()
+            db.inspectionDao().clear()
+            db.workOrderDao().clear()
+            db.expenseNoteDao().clear()
         }
     }
 
@@ -82,5 +98,8 @@ class CloudSync(private val db: AppDatabase) {
         const val COLLECTION_DRIVERS = "drivers"
         const val COLLECTION_ASSIGNMENTS = "assignments"
         const val COLLECTION_FUEL_LOGS = "fuelLogs"
+        const val COLLECTION_INSPECTIONS = "inspections"
+        const val COLLECTION_WORK_ORDERS = "workOrders"
+        const val COLLECTION_EXPENSE_NOTES = "expenseNotes"
     }
 }

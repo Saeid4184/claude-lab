@@ -86,7 +86,6 @@ class FuelFormActivity : AppCompatActivity() {
         log?.let {
             binding.etLiters.setText(formatLiters(it.liters))
             binding.etMeter.setText(it.meterReading?.toString())
-            binding.etCost.setText(it.totalCost?.toString())
             binding.etNotes.setText(it.notes)
         }
         vehicle?.let {
@@ -123,7 +122,6 @@ class FuelFormActivity : AppCompatActivity() {
     private fun save() {
         binding.tilLiters.error = null
         binding.tilMeter.error = null
-        binding.tilCost.error = null
         val vehicle = selectedVehicle ?: run { binding.tilVehicle.error = getString(R.string.error_required); return }
         val at = date() ?: run { binding.tilDate.error = getString(R.string.error_required); return }
         val liters = binding.etLiters.textOrNull()?.normalizeDigitsForParsing()?.toDoubleOrNull()
@@ -133,16 +131,12 @@ class FuelFormActivity : AppCompatActivity() {
         val meter = try { binding.etMeter.longOrNull() } catch (e: NumberFormatException) {
             binding.tilMeter.error = getString(R.string.error_number); return
         }
-        val cost = try { binding.etCost.longOrNull() } catch (e: NumberFormatException) {
-            binding.tilCost.error = getString(R.string.error_number); return
-        }
         val input = (existing ?: FuelLogEntity()).copy(
             vehicleId = vehicle.id,
             timestamp = at,
             liters = liters,
             meterReading = meter,
             source = FuelSource.values()[selectedSource()].name,
-            totalCost = cost,
             notes = binding.etNotes.textOrNull()
         )
 

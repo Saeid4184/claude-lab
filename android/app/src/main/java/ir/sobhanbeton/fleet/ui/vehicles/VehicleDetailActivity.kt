@@ -16,6 +16,11 @@ import ir.sobhanbeton.fleet.data.ExpiryAlerts
 import ir.sobhanbeton.fleet.data.FleetRepository
 import ir.sobhanbeton.fleet.data.FuelLogEntity
 import ir.sobhanbeton.fleet.data.FuelStats
+import ir.sobhanbeton.fleet.data.InspectionEntity
+import ir.sobhanbeton.fleet.data.InspectionStats
+import ir.sobhanbeton.fleet.data.PartStatus
+import ir.sobhanbeton.fleet.data.WorkOrderEntity
+import ir.sobhanbeton.fleet.data.WorkOrderStatus
 import ir.sobhanbeton.fleet.data.MeterType
 import ir.sobhanbeton.fleet.data.Session
 import ir.sobhanbeton.fleet.data.VehicleEntity
@@ -29,13 +34,16 @@ import ir.sobhanbeton.fleet.ui.common.FleetFormat
 import ir.sobhanbeton.fleet.ui.common.JalaliDatePickerDialog
 import ir.sobhanbeton.fleet.ui.drivers.DriverDetailActivity
 import ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity
+import ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity
+import ir.sobhanbeton.fleet.ui.repairs.WorkOrderDetailActivity
+import ir.sobhanbeton.fleet.ui.repairs.WorkOrderFormActivity
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 /** "شناسنامهٔ ماشین": everything known about one vehicle, its driver history, and (expert
  *  only) the actions to change driver/status, edit or delete it. Later phases add its fuel,
- *  repair and service history here; phase 2 added fuel. */
+ *  service history here; fuel, repairs and inspections are shown already. */
 class VehicleDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFleetDetailBinding
@@ -46,6 +54,8 @@ class VehicleDetailActivity : AppCompatActivity() {
     private var vehicle: VehicleEntity? = null
     private var history: List<AssignmentEntity> = emptyList()
     private var fuel: List<FuelLogEntity> = emptyList()
+    private var repairs: List<WorkOrderEntity> = emptyList()
+    private var inspections: List<InspectionEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +91,14 @@ class VehicleDetailActivity : AppCompatActivity() {
         }
         repository.vehicleFuel(vehicleId).observe(this) { list ->
             fuel = list
+            render()
+        }
+        repository.vehicleWorkOrders(vehicleId).observe(this) { list ->
+            repairs = list
+            render()
+        }
+        repository.vehicleInspections(vehicleId).observe(this) { list ->
+            inspections = list
             render()
         }
     }
@@ -125,6 +143,8 @@ class VehicleDetailActivity : AppCompatActivity() {
         expiryRow(getString(R.string.field_technical_expiry), v.technicalInspectionExpiry)
 
         renderFuel(meterType)
+        renderRepairs()
+        renderInspection()
 
         sections.section(getString(R.string.detail_section_driver_history))
         if (history.isEmpty()) {
@@ -179,6 +199,46 @@ class VehicleDetailActivity : AppCompatActivity() {
                 FleetFormat.date(log.timestamp),
                 detail,
                 onClick = if (Session.canEdit()) ({ FuelFormActivity.start(this, fuelId = log.id) }) else null
+            )
+        }
+    }
+
+    /** Open repairs, then the latest few finished ones. */
+    private fun renderRepairs() {
+        sections.section(getString(R.string.home_repairs))
+        if (repairs.isEmpty()) {
+            sections.note(getString(R.string.work_orders_none_for_vehicle))
+            return
+        }
+        val (open, done) = repairs.partition { it.statusEnum() != WorkOrderStatus.DONE }
+        (open + done.take(RECENT_REPAIR_ROWS)).forEach { o ->
+            sections.row(
+                FleetFormat.date(o.reportedAt),
+                "${o.title} — ${o.statusEnum().displayName}".toPersianDigitsInString(),
+                if (o.statusEnum() == WorkOrderStatus.DONE) null else R.color.safety_amber,
+                onClick = { WorkOrderDetailActivity.start(this, o.id) }
+            )
+        }
+    }
+
+    /** Latest weekly inspection and what it left open. */
+    private fun renderInspection() {
+        sections.section(getString(R.string.home_inspections))
+        val latest = inspections.maxByOrNull { it.timestamp }
+        if (latest == null) {
+            sections.note(getString(R.string.inspection_never_done))
+            return
+        }
+        sections.row(
+            getString(R.string.inspection_latest_label),
+            getString(R.string.inspection_last_format, FleetFormat.date(latest.timestamp), latest.rejectedCount).toPersianDigitsInString(),
+            onClick = if (Session.canEdit()) ({ InspectionFormActivity.start(this, vehicleId, latest.id) }) else null
+        )
+        InspectionStats.openDefects(listOf(latest)).forEach { d ->
+            sections.row(
+                d.partName,
+                getString(R.string.defect_since, FleetFormat.date(d.since)).toPersianDigitsInString(),
+                if (d.status == PartStatus.BAD) R.color.danger_red else R.color.safety_amber
             )
         }
     }
@@ -255,6 +315,8 @@ class VehicleDetailActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (Session.canEdit()) {
             menu.add(Menu.NONE, MENU_ADD_FUEL, Menu.NONE, R.string.fuel_add)
+            menu.add(Menu.NONE, MENU_ADD_REPAIR, Menu.NONE, R.string.work_order_add)
+            menu.add(Menu.NONE, MENU_INSPECT, Menu.NONE, R.string.inspection_submit)
             menu.add(Menu.NONE, MENU_EDIT, Menu.NONE, R.string.action_edit)
             menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
         }
@@ -264,6 +326,14 @@ class VehicleDetailActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         MENU_ADD_FUEL -> {
             FuelFormActivity.start(this, vehicleId = vehicleId)
+            true
+        }
+        MENU_ADD_REPAIR -> {
+            WorkOrderFormActivity.start(this, vehicleId = vehicleId)
+            true
+        }
+        MENU_INSPECT -> {
+            InspectionFormActivity.start(this, vehicleId)
             true
         }
         MENU_EDIT -> {
@@ -287,6 +357,9 @@ class VehicleDetailActivity : AppCompatActivity() {
         private const val MENU_ADD_FUEL = 3
         private const val FUEL_AVERAGE_DAYS = 90L
         private const val RECENT_FUEL_ROWS = 5
+        private const val RECENT_REPAIR_ROWS = 3
+        private const val MENU_ADD_REPAIR = 4
+        private const val MENU_INSPECT = 5
 
         fun start(context: Context, vehicleId: String) {
             context.startActivity(Intent(context, VehicleDetailActivity::class.java).putExtra(EXTRA_ID, vehicleId))

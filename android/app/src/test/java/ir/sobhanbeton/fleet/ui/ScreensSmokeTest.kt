@@ -70,6 +70,66 @@ class ScreensSmokeTest {
     @Test fun expiring() { open(ExpiringDocumentsActivity::class.java) }
     @Test fun bulkImport() { open(BulkImportActivity::class.java) }
     @Test fun fuel() { open(ir.sobhanbeton.fleet.ui.fuel.FuelActivity::class.java) }
+    @Test fun inspections() { open(ir.sobhanbeton.fleet.ui.inspections.InspectionsActivity::class.java) }
+    @Test fun workOrders() { open(ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity::class.java) }
+    @Test fun workOrderForm() { open(ir.sobhanbeton.fleet.ui.repairs.WorkOrderFormActivity::class.java) }
+    @Test fun expenseNotes() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity::class.java) }
+    @Test fun expenseNoteForm() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNoteFormActivity::class.java) }
+
+    @Test
+    fun inspectionFormInflates() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        // Unknown vehicle: the form inflates, then closes itself.
+        open(
+            ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity::class.java,
+            Intent(ctx, ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity::class.java).putExtra("vehicle_id", "missing")
+        )
+    }
+
+    @Test
+    fun inspectionFormBuildsDiagramForEveryCategory() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val dao = ir.sobhanbeton.fleet.data.AppDatabase.getInstance(ctx).vehicleDao()
+        for (category in ir.sobhanbeton.fleet.data.VehicleCategory.values()) {
+            val id = "v-${category.name}"
+            kotlinx.coroutines.runBlocking {
+                dao.upsert(ir.sobhanbeton.fleet.data.VehicleEntity(id = id, plate = "12345", category = category.name))
+            }
+            val activity = open(
+                ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity::class.java,
+                Intent(ctx, ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity::class.java).putExtra("vehicle_id", id)
+            )
+            // Room runs on a background executor; wait until the form is built.
+            val button = activity.findViewById<TextView>(R.id.btnSubmit)
+            repeat(50) {
+                if (!button.isEnabled) {
+                    Thread.sleep(20)
+                    org.robolectric.shadows.ShadowLooper.idleMainLooper()
+                }
+            }
+            assertTrue("form for $category", button.isEnabled)
+            val diagram = activity.findViewById<ir.sobhanbeton.fleet.ui.view.VehicleDiagramView>(R.id.diagramView)
+            val expected = ir.sobhanbeton.fleet.data.InspectionCatalog.partsFor(category).size -
+                ir.sobhanbeton.fleet.data.InspectionCatalog.nonSpatialParts.size
+            org.junit.Assert.assertEquals("diagram parts for $category", expected, diagram.currentResults().size)
+        }
+    }
+
+    @Test
+    fun workOrderDetail() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        open(
+            ir.sobhanbeton.fleet.ui.repairs.WorkOrderDetailActivity::class.java,
+            Intent(ctx, ir.sobhanbeton.fleet.ui.repairs.WorkOrderDetailActivity::class.java).putExtra("work_order_id", "missing")
+        )
+    }
+
+    @Test
+    fun managerCannotOpenExpenseNotes() {
+        Session.set(UserProfile(uid = "u2", name = "مدیر", email = "m@x.ir", role = UserRole.MANAGER))
+        val activity = Robolectric.buildActivity(ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity::class.java).setup().get()
+        assertTrue(activity.isFinishing)
+    }
 
     @Test
     fun fuelFormRequiresVehicle() {

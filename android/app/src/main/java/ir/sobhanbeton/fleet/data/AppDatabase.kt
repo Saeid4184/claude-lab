@@ -17,8 +17,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * offline that haven't reached the server yet).
  */
 @Database(
-    entities = [VehicleEntity::class, DriverEntity::class, AssignmentEntity::class, FuelLogEntity::class],
-    version = 2,
+    entities = [
+        VehicleEntity::class, DriverEntity::class, AssignmentEntity::class, FuelLogEntity::class,
+        InspectionEntity::class, WorkOrderEntity::class, ExpenseNoteEntity::class
+    ],
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -27,6 +30,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun driverDao(): DriverDao
     abstract fun assignmentDao(): AssignmentDao
     abstract fun fuelLogDao(): FuelLogDao
+    abstract fun inspectionDao(): InspectionDao
+    abstract fun workOrderDao(): WorkOrderDao
+    abstract fun expenseNoteDao(): ExpenseNoteDao
 
     companion object {
         @Volatile
@@ -60,4 +66,59 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2)
+/** v2 → v3 (phase 3): fuel_logs loses its totalCost column (costs live only in the private
+ *  expense notes), and the inspections, work_orders and expense_notes tables are added.
+ *  SQLite on older Androids can't DROP COLUMN, so fuel_logs is rebuilt: new table, copy rows,
+ *  swap. SQL is Room's own createSql for v3 (app/schemas/…/3.json), checked by MigrationTest. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `fuel_logs_new` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, " +
+                "`vehiclePlate` TEXT NOT NULL, `category` TEXT NOT NULL, `driverId` TEXT, `driverName` TEXT, " +
+                "`timestamp` INTEGER NOT NULL, `liters` REAL NOT NULL, `meterReading` INTEGER, `source` TEXT NOT NULL, " +
+                "`notes` TEXT, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "INSERT INTO `fuel_logs_new` (id, vehicleId, vehiclePlate, category, driverId, driverName, timestamp, " +
+                "liters, meterReading, source, notes, performedByName, createdAt) " +
+                "SELECT id, vehicleId, vehiclePlate, category, driverId, driverName, timestamp, " +
+                "liters, meterReading, source, notes, performedByName, createdAt FROM `fuel_logs`"
+        )
+        db.execSQL("DROP TABLE `fuel_logs`")
+        db.execSQL("ALTER TABLE `fuel_logs_new` RENAME TO `fuel_logs`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_fuel_logs_vehicleId` ON `fuel_logs` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_fuel_logs_timestamp` ON `fuel_logs` (`timestamp`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `inspections` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, " +
+                "`vehiclePlate` TEXT NOT NULL, `groupLabel` TEXT, `driverName` TEXT, `category` TEXT NOT NULL, " +
+                "`partsJson` TEXT NOT NULL, `approvedCount` INTEGER NOT NULL, `rejectedCount` INTEGER NOT NULL, " +
+                "`notes` TEXT, `performedByName` TEXT, `timestamp` INTEGER NOT NULL, `correctedAt` INTEGER, " +
+                "`correctedByName` TEXT, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_inspections_vehicleId` ON `inspections` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_inspections_timestamp` ON `inspections` (`timestamp`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `work_orders` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, " +
+                "`vehiclePlate` TEXT NOT NULL, `category` TEXT NOT NULL, `driverName` TEXT, `reportedAt` INTEGER NOT NULL, " +
+                "`title` TEXT NOT NULL, `details` TEXT, `severity` TEXT NOT NULL, `location` TEXT NOT NULL, " +
+                "`workshopName` TEXT, `status` TEXT NOT NULL, `startedAt` INTEGER, `completedAt` INTEGER, " +
+                "`meterReading` INTEGER, `partsUsed` TEXT, `workDone` TEXT, `sourceInspectionId` TEXT, " +
+                "`sourcePartName` TEXT, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_work_orders_vehicleId` ON `work_orders` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_work_orders_status` ON `work_orders` (`status`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_work_orders_reportedAt` ON `work_orders` (`reportedAt`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `expense_notes` (`id` TEXT NOT NULL, `date` INTEGER NOT NULL, " +
+                "`title` TEXT NOT NULL, `amount` INTEGER NOT NULL, `notes` TEXT, `createdAt` INTEGER NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_expense_notes_date` ON `expense_notes` (`date`)")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)

@@ -19,7 +19,6 @@ object FuelStats {
         val plate: String,
         val fills: Int,
         val liters: Double,
-        val cost: Long,
         val consumption: Consumption?
     )
 
@@ -59,7 +58,6 @@ object FuelStats {
                 plate = vehicle?.plate ?: list.first().vehiclePlate,
                 fills = list.size,
                 liters = list.sumOf { it.liters },
-                cost = list.sumOf { it.totalCost ?: 0L },
                 consumption = consumption(list, vehicle?.meterTypeEnum() ?: MeterType.KM)
             )
         }.sortedByDescending { it.liters }
