@@ -74,9 +74,21 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate4To5_addsDailyWorkAndIncidents() {
+        helper.createDatabase(DB, 4).use { db ->
+            db.execSQL("INSERT INTO service_plans (id, name, category, intervalDays, createdAt, updatedAt) VALUES ('p', 'روغن', 'MIXER', 90, 1, 1)")
+        }
+        helper.runMigrationsAndValidate(DB, 5, true, MIGRATION_4_5).use { db ->
+            db.query("SELECT COUNT(*) FROM service_plans").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
+            db.execSQL("INSERT INTO daily_work (id, vehicleId, vehiclePlate, category, date, dayKey, trips, concreteM3, createdAt, updatedAt) " +
+                "VALUES ('v_14050725', 'v', '1', 'MIXER', 1, 14050725, 8, 64.0, 1, 1)")
+        }
+    }
+
+    @Test
     fun allMigrationsReachLatestVersion() {
         helper.createDatabase(DB, 1).close()
-        helper.runMigrationsAndValidate(DB, 4, true, *ALL_MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB, 5, true, *ALL_MIGRATIONS).close()
     }
 
     private companion object {

@@ -30,7 +30,9 @@ import ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity
 import ir.sobhanbeton.fleet.ui.inspections.InspectionsActivity
 import ir.sobhanbeton.fleet.notify.DailyAlertsWorker
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity
+import ir.sobhanbeton.fleet.ui.incidents.IncidentsActivity
 import ir.sobhanbeton.fleet.ui.services.ServicesActivity
+import ir.sobhanbeton.fleet.ui.work.DailyWorkActivity
 import ir.sobhanbeton.fleet.util.AppPreferences
 import ir.sobhanbeton.fleet.ui.fuel.FuelActivity
 import ir.sobhanbeton.fleet.ui.vehicles.VehiclesActivity
@@ -97,6 +99,8 @@ class MainActivity : AppCompatActivity() {
                 HomeDestination.INSPECTIONS -> startActivity(Intent(this, InspectionsActivity::class.java))
                 HomeDestination.REPAIRS -> startActivity(Intent(this, WorkOrdersActivity::class.java))
                 HomeDestination.SERVICES -> startActivity(Intent(this, ServicesActivity::class.java))
+                HomeDestination.DAILY_WORK -> startActivity(Intent(this, DailyWorkActivity::class.java))
+                HomeDestination.INCIDENTS -> startActivity(Intent(this, IncidentsActivity::class.java))
                 HomeDestination.EXPENSES -> startActivity(Intent(this, ExpenseNotesActivity::class.java))
                 else -> Unit
             }
@@ -220,13 +224,11 @@ class MainActivity : AppCompatActivity() {
         ),
         HomeMenuItem(
             HomeDestination.DAILY_WORK, R.string.home_daily_work, R.string.home_subtitle_daily_work,
-            R.drawable.ic_calendar, R.color.accent_visitor, R.color.accent_visitor_bg,
-            comingInPhase = 5
+            R.drawable.ic_calendar, R.color.accent_visitor, R.color.accent_visitor_bg
         ),
         HomeMenuItem(
             HomeDestination.INCIDENTS, R.string.home_incidents, R.string.home_subtitle_incidents,
-            R.drawable.ic_report, R.color.accent_report, R.color.accent_report_bg,
-            comingInPhase = 5
+            R.drawable.ic_report, R.color.accent_report, R.color.accent_report_bg
         ),
         HomeMenuItem(
             HomeDestination.REPORTS, R.string.home_reports, R.string.home_subtitle_reports,

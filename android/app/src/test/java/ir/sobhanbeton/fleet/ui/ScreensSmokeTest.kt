@@ -78,6 +78,10 @@ class ScreensSmokeTest {
     @Test fun services() { open(ir.sobhanbeton.fleet.ui.services.ServicesActivity::class.java) }
     @Test fun serviceLogForm() { open(ir.sobhanbeton.fleet.ui.services.ServiceLogFormActivity::class.java) }
     @Test fun servicePlanForm() { open(ir.sobhanbeton.fleet.ui.services.ServicePlanFormActivity::class.java) }
+    @Test fun dailyWork() { open(ir.sobhanbeton.fleet.ui.work.DailyWorkActivity::class.java) }
+    @Test fun dailyWorkForm() { open(ir.sobhanbeton.fleet.ui.work.DailyWorkFormActivity::class.java) }
+    @Test fun incidents() { open(ir.sobhanbeton.fleet.ui.incidents.IncidentsActivity::class.java) }
+    @Test fun incidentForm() { open(ir.sobhanbeton.fleet.ui.incidents.IncidentFormActivity::class.java) }
     @Test fun expenseNotes() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity::class.java) }
     @Test fun expenseNoteForm() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNoteFormActivity::class.java) }
 
@@ -117,6 +121,33 @@ class ScreensSmokeTest {
             val expected = ir.sobhanbeton.fleet.data.InspectionCatalog.partsFor(category).size -
                 ir.sobhanbeton.fleet.data.InspectionCatalog.nonSpatialParts.size
             org.junit.Assert.assertEquals("diagram parts for $category", expected, diagram.currentResults().size)
+        }
+    }
+
+    @Test
+    fun dailyWorkFormShowsOnlyThatVehicleTypesMetrics() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val dao = ir.sobhanbeton.fleet.data.AppDatabase.getInstance(ctx).vehicleDao()
+        val expected = mapOf(
+            ir.sobhanbeton.fleet.data.VehicleCategory.MIXER to listOf(R.id.tilTrips, R.id.tilConcrete),
+            ir.sobhanbeton.fleet.data.VehicleCategory.DUMP_TRUCK to listOf(R.id.tilMineTrips, R.id.tilDebrisTrips),
+            ir.sobhanbeton.fleet.data.VehicleCategory.CONCRETE_PUMP to listOf(R.id.tilConcrete)
+        )
+        val all = listOf(R.id.tilTrips, R.id.tilConcrete, R.id.tilMineTrips, R.id.tilDebrisTrips)
+        for ((category, visible) in expected) {
+            val id = "w-${category.name}"
+            kotlinx.coroutines.runBlocking { dao.upsert(ir.sobhanbeton.fleet.data.VehicleEntity(id = id, plate = "12345", category = category.name)) }
+            val activity = open(
+                ir.sobhanbeton.fleet.ui.work.DailyWorkFormActivity::class.java,
+                Intent(ctx, ir.sobhanbeton.fleet.ui.work.DailyWorkFormActivity::class.java).putExtra("vehicle_id", id).putExtra("date", 1_800_000_000_000L)
+            )
+            val save = activity.findViewById<TextView>(R.id.btnSave)
+            repeat(50) { if (!save.isEnabled) { Thread.sleep(20); org.robolectric.shadows.ShadowLooper.idleMainLooper() } }
+            assertTrue(save.isEnabled)
+            for (field in all) {
+                val shown = activity.findViewById<android.view.View>(field).visibility == android.view.View.VISIBLE
+                org.junit.Assert.assertEquals("$category field ${activity.resources.getResourceEntryName(field)}", field in visible, shown)
+            }
         }
     }
 

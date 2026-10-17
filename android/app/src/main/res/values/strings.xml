@@ -57,7 +57,7 @@
     <string name="home_services">سرویس دوره‌ای</string>
     <string name="home_subtitle_services">روغن، فیلتر و سرویس‌های سررسیده</string>
     <string name="home_daily_work">کارکرد روزانه</string>
-    <string name="home_subtitle_daily_work">تعداد سرویس، متراژ و کیلومتر/ساعت</string>
+    <string name="home_subtitle_daily_work">سرویس و متراژ بتن، بار معدن و نخاله؛ عملکرد رانندگان</string>
     <string name="home_incidents">حوادث و تخلفات</string>
     <string name="home_subtitle_incidents">تصادف، جریمه و تخلف رانندگان</string>
     <string name="home_reports">داشبورد و گزارش‌ها</string>
@@ -337,6 +337,57 @@
     <string name="settings_daily_alerts">اعلان روزانه (سرویس، مدارک و سوخت)</string>
     <string name="notify_channel_name">یادآوری روزانهٔ ناوگان</string>
     <string name="notify_title">ناوگان: موارد نیازمند پیگیری</string>
+
+
+    <!-- Phase 5: daily work (performance), incidents -->
+    <string name="daily_work_add">ثبت کارکرد</string>
+    <string name="daily_work_edit">اصلاح کارکرد</string>
+    <string name="daily_work_delete_confirm">کارکرد این روزِ این ماشین حذف شود؟</string>
+    <string name="work_tab_day">کارکرد روز</string>
+    <string name="work_tab_by_vehicle">به تفکیک ماشین</string>
+    <string name="work_tab_by_driver">به تفکیک راننده</string>
+    <string name="work_sheet_detail">ریز کارکرد</string>
+    <string name="work_choose_day">انتخاب روز</string>
+    <string name="work_not_recorded">ثبت نشده</string>
+    <string name="work_day_summary">%1$s — کارکرد %2$d ماشین ثبت شده</string>
+    <string name="work_range_summary">%1$s تا %2$s — بتن: %3$s م³ · سرویس: %4$d · معدن: %5$d · نخاله: %6$d</string>
+    <string name="work_range_empty">در این بازه کارکردی ثبت نشده است</string>
+    <string name="work_days_count">%1$d روز کار</string>
+    <string name="work_days_label">روزهای کار</string>
+    <string name="work_driver_assigned">رانندهٔ تخصیص‌یافته در آن روز</string>
+    <string name="work_none_for_vehicle">هنوز کارکردی برای این ماشین ثبت نشده است</string>
+    <string name="work_none_this_month">این ماه کارکردی ثبت نشده است</string>
+    <string name="driver_month_work">کارکرد این ماه</string>
+    <string name="metric_trips">%1$d سرویس</string>
+    <string name="metric_m3">%1$s م³</string>
+    <string name="metric_mine">%1$d معدن</string>
+    <string name="metric_debris">%1$d نخاله</string>
+    <string name="unit_m3">م³</string>
+    <string name="field_work_date">تاریخ</string>
+    <string name="field_work_driver">راننده</string>
+    <string name="field_trips">تعداد سرویس</string>
+    <string name="field_trips_mixer">تعداد سرویس بتن</string>
+    <string name="field_concrete_m3">متراژ بتن حمل‌شده</string>
+    <string name="field_concrete_pumped">متراژ بتن تخلیه‌شده در پروژه</string>
+    <string name="field_mine_trips">تعداد سرویس بار از معدن</string>
+    <string name="field_debris_trips">تعداد سرویس نخاله (خروج از کارخانه)</string>
+    <string name="incident_add">ثبت حادثه / تخلف</string>
+    <string name="incident_edit">اصلاح حادثه / تخلف</string>
+    <string name="incident_delete_confirm">این مورد حذف شود؟</string>
+    <string name="incident_need_subject">ماشین یا راننده (حداقل یکی) را انتخاب کنید</string>
+    <string name="incidents_empty">هنوز موردی ثبت نشده است</string>
+    <string name="incidents_export_empty">در این بازه موردی ثبت نشده است</string>
+    <string name="choice_none">— هیچ‌کدام —</string>
+    <string name="field_incident_type">نوع</string>
+    <string name="field_incident_date">تاریخ</string>
+    <string name="field_vehicle_optional">ماشین</string>
+    <string name="field_driver_optional">راننده</string>
+    <string name="field_incident_subject">موضوع</string>
+    <string name="field_other_text">توضیح «سایر»</string>
+    <string name="field_incident_severity">نتیجه / شدت</string>
+    <string name="field_incident_location">محل (اختیاری)</string>
+    <string name="field_incident_action">اقدام انجام‌شده</string>
+    <string name="field_incident_description">توضیحات (اختیاری)</string>
 
     <string-array name="license_types">
         <item>پایه یکم</item>

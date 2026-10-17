@@ -20,9 +20,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         VehicleEntity::class, DriverEntity::class, AssignmentEntity::class, FuelLogEntity::class,
         InspectionEntity::class, WorkOrderEntity::class, ExpenseNoteEntity::class,
-        ServicePlanEntity::class, ServiceLogEntity::class
+        ServicePlanEntity::class, ServiceLogEntity::class, DailyWorkEntity::class, IncidentEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -36,6 +36,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseNoteDao(): ExpenseNoteDao
     abstract fun servicePlanDao(): ServicePlanDao
     abstract fun serviceLogDao(): ServiceLogDao
+    abstract fun dailyWorkDao(): DailyWorkDao
+    abstract fun incidentDao(): IncidentDao
 
     companion object {
         @Volatile
@@ -143,4 +145,30 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+/** v4 → v5 (phase 5): daily work (performance) and incidents. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `daily_work` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, " +
+                "`vehiclePlate` TEXT NOT NULL, `category` TEXT NOT NULL, `driverId` TEXT, `driverName` TEXT, " +
+                "`date` INTEGER NOT NULL, `dayKey` INTEGER NOT NULL, `trips` INTEGER, `concreteM3` REAL, " +
+                "`mineTrips` INTEGER, `debrisTrips` INTEGER, `notes` TEXT, `performedByName` TEXT, " +
+                "`createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_daily_work_vehicleId` ON `daily_work` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_daily_work_driverId` ON `daily_work` (`driverId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_daily_work_dayKey` ON `daily_work` (`dayKey`)")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `incidents` (`id` TEXT NOT NULL, `type` TEXT NOT NULL, " +
+                "`occurredAt` INTEGER NOT NULL, `vehicleId` TEXT, `vehiclePlate` TEXT, `driverId` TEXT, " +
+                "`driverName` TEXT, `subject` TEXT NOT NULL, `severity` TEXT, `location` TEXT, `actionTaken` TEXT, " +
+                "`description` TEXT, `summaryText` TEXT NOT NULL, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_incidents_vehicleId` ON `incidents` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_incidents_driverId` ON `incidents` (`driverId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_incidents_occurredAt` ON `incidents` (`occurredAt`)")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)

@@ -12,6 +12,10 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import ir.sobhanbeton.fleet.R
 import ir.sobhanbeton.fleet.data.AssignmentEntity
+import ir.sobhanbeton.fleet.data.DailyWorkEntity
+import ir.sobhanbeton.fleet.data.DailyWorkStats
+import ir.sobhanbeton.fleet.data.IncidentEntity
+import ir.sobhanbeton.fleet.data.IncidentType
 import ir.sobhanbeton.fleet.data.DriverEntity
 import ir.sobhanbeton.fleet.data.DriverStatus
 import ir.sobhanbeton.fleet.data.ExpiryAlerts
@@ -22,13 +26,14 @@ import ir.sobhanbeton.fleet.ui.common.DetailSections
 import ir.sobhanbeton.fleet.ui.common.Dialogs.confirm
 import ir.sobhanbeton.fleet.ui.common.Dialogs.reportSave
 import ir.sobhanbeton.fleet.ui.common.FleetFormat
+import ir.sobhanbeton.fleet.ui.incidents.IncidentFormActivity
 import ir.sobhanbeton.fleet.ui.vehicles.VehicleDetailActivity
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.launch
 
 /** "شناسنامهٔ راننده": details, documents, current vehicle and vehicle history. Assigning a
  *  vehicle is done from the vehicle's screen (one place for that action); here the expert can
- *  edit, change status, or delete. Later phases add the driver's work, incidents, etc. */
+ *  edit, change status, or delete. Also shows this month's work and the driver's incidents. */
 class DriverDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFleetDetailBinding
@@ -38,6 +43,8 @@ class DriverDetailActivity : AppCompatActivity() {
 
     private var driver: DriverEntity? = null
     private var history: List<AssignmentEntity> = emptyList()
+    private var monthWork: List<DailyWorkEntity> = emptyList()
+    private var incidents: List<IncidentEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +75,15 @@ class DriverDetailActivity : AppCompatActivity() {
         }
         repository.driverAssignments(driverId).observe(this) { list ->
             history = list
+            render()
+        }
+        val today = DailyWorkStats.dayKey(System.currentTimeMillis())
+        repository.driverDailyWork(driverId, today / 100 * 100 + 1, today).observe(this) { list ->
+            monthWork = list
+            render()
+        }
+        repository.driverIncidents(driverId).observe(this) { list ->
+            incidents = list
             render()
         }
     }
@@ -101,6 +117,30 @@ class DriverDetailActivity : AppCompatActivity() {
         expiryRow(getString(R.string.field_license_expiry), d.licenseExpiry)
         expiryRow(getString(R.string.field_smart_card_expiry), d.smartCardExpiry)
         expiryRow(getString(R.string.field_health_card_expiry), d.healthCardExpiry)
+
+        sections.section(getString(R.string.driver_month_work))
+        val t = DailyWorkStats.byDriver(monthWork).firstOrNull()
+        if (t == null) {
+            sections.note(getString(R.string.work_none_this_month))
+        } else {
+            sections.row(getString(R.string.work_days_label), FleetFormat.number(t.days))
+            if (t.trips > 0) sections.row(getString(R.string.field_trips), FleetFormat.number(t.trips))
+            if (t.concreteM3 > 0) sections.row(getString(R.string.field_concrete_m3), FleetFormat.decimal(t.concreteM3))
+            if (t.mineTrips > 0) sections.row(getString(R.string.field_mine_trips), FleetFormat.number(t.mineTrips))
+            if (t.debrisTrips > 0) sections.row(getString(R.string.field_debris_trips), FleetFormat.number(t.debrisTrips))
+        }
+
+        if (incidents.isNotEmpty()) {
+            sections.section(getString(R.string.home_incidents))
+            incidents.take(RECENT_INCIDENT_ROWS).forEach { i ->
+                sections.row(
+                    FleetFormat.date(i.occurredAt),
+                    "${i.typeEnum().displayName}: ${i.subject}".toPersianDigitsInString(),
+                    if (i.typeEnum() == IncidentType.COMMENDATION) R.color.status_green else null,
+                    onClick = if (Session.canEdit()) ({ IncidentFormActivity.start(this, incidentId = i.id) }) else null
+                )
+            }
+        }
 
         sections.section(getString(R.string.detail_section_vehicle_history))
         if (history.isEmpty()) {
@@ -149,11 +189,18 @@ class DriverDetailActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        if (Session.canEdit()) menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
+        if (Session.canEdit()) {
+            menu.add(Menu.NONE, MENU_INCIDENT, Menu.NONE, R.string.incident_add)
+            menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
+        }
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        MENU_INCIDENT -> {
+            IncidentFormActivity.start(this, driverId = driverId)
+            true
+        }
         MENU_DELETE -> {
             confirm(R.string.action_delete, getString(R.string.driver_delete_confirm, driver?.name.orEmpty()), R.string.action_delete) {
                 lifecycleScope.launch { reportSave(repository.deleteDriver(driverId)) { finish() } }
@@ -166,6 +213,8 @@ class DriverDetailActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_ID = "driver_id"
         private const val MENU_DELETE = 1
+        private const val MENU_INCIDENT = 2
+        private const val RECENT_INCIDENT_ROWS = 5
 
         fun start(context: Context, driverId: String) {
             context.startActivity(Intent(context, DriverDetailActivity::class.java).putExtra(EXTRA_ID, driverId))

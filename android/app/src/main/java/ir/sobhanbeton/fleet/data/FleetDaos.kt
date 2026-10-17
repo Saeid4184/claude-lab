@@ -235,3 +235,60 @@ interface ServiceLogDao {
     @Query("DELETE FROM service_logs")
     suspend fun clear()
 }
+
+@Dao
+interface DailyWorkDao {
+    @Query("SELECT * FROM daily_work WHERE dayKey = :dayKey")
+    fun getForDayLive(dayKey: Int): LiveData<List<DailyWorkEntity>>
+
+    @Query("SELECT * FROM daily_work WHERE dayKey BETWEEN :fromKey AND :toKey ORDER BY dayKey")
+    fun getInRangeLive(fromKey: Int, toKey: Int): LiveData<List<DailyWorkEntity>>
+
+    @Query("SELECT * FROM daily_work WHERE dayKey BETWEEN :fromKey AND :toKey ORDER BY dayKey")
+    suspend fun getInRange(fromKey: Int, toKey: Int): List<DailyWorkEntity>
+
+    @Query("SELECT * FROM daily_work WHERE vehicleId = :vehicleId ORDER BY dayKey DESC LIMIT :limit")
+    fun getRecentForVehicleLive(vehicleId: String, limit: Int): LiveData<List<DailyWorkEntity>>
+
+    @Query("SELECT * FROM daily_work WHERE driverId = :driverId AND dayKey BETWEEN :fromKey AND :toKey")
+    fun getForDriverInRangeLive(driverId: String, fromKey: Int, toKey: Int): LiveData<List<DailyWorkEntity>>
+
+    @Query("SELECT * FROM daily_work WHERE id = :id")
+    suspend fun getById(id: String): DailyWorkEntity?
+
+    @Upsert
+    suspend fun upsert(record: DailyWorkEntity)
+
+    @Query("DELETE FROM daily_work WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM daily_work")
+    suspend fun clear()
+}
+
+@Dao
+interface IncidentDao {
+    @Query("SELECT * FROM incidents ORDER BY occurredAt DESC")
+    fun getAllLive(): LiveData<List<IncidentEntity>>
+
+    @Query("SELECT * FROM incidents WHERE vehicleId = :vehicleId ORDER BY occurredAt DESC")
+    fun getForVehicleLive(vehicleId: String): LiveData<List<IncidentEntity>>
+
+    @Query("SELECT * FROM incidents WHERE driverId = :driverId ORDER BY occurredAt DESC")
+    fun getForDriverLive(driverId: String): LiveData<List<IncidentEntity>>
+
+    @Query("SELECT * FROM incidents WHERE occurredAt BETWEEN :from AND :to ORDER BY occurredAt")
+    suspend fun getInRange(from: Long, to: Long): List<IncidentEntity>
+
+    @Query("SELECT * FROM incidents WHERE id = :id")
+    suspend fun getById(id: String): IncidentEntity?
+
+    @Upsert
+    suspend fun upsert(incident: IncidentEntity)
+
+    @Query("DELETE FROM incidents WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM incidents")
+    suspend fun clear()
+}

@@ -11,6 +11,10 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import ir.sobhanbeton.fleet.R
 import ir.sobhanbeton.fleet.data.AssignmentEntity
+import ir.sobhanbeton.fleet.data.DailyWorkEntity
+import ir.sobhanbeton.fleet.data.IncidentEntity
+import ir.sobhanbeton.fleet.data.IncidentType
+import ir.sobhanbeton.fleet.data.WorkMetrics
 import ir.sobhanbeton.fleet.data.DriverStatus
 import ir.sobhanbeton.fleet.data.ExpiryAlerts
 import ir.sobhanbeton.fleet.data.FleetRepository
@@ -40,14 +44,16 @@ import ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity
 import ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrderDetailActivity
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrderFormActivity
+import ir.sobhanbeton.fleet.ui.incidents.IncidentFormActivity
 import ir.sobhanbeton.fleet.ui.services.ServiceLogFormActivity
+import ir.sobhanbeton.fleet.ui.work.DailyWorkFormActivity
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 /** "شناسنامهٔ ماشین": everything known about one vehicle, its driver history, and (expert
- *  only) the actions to change driver/status, edit or delete it. Later phases add its fuel,
- *  work and incidents here; fuel, services, repairs and inspections are shown already. */
+ *  only) the actions to change driver/status, edit or delete it, plus its fuel, work,
+ *  services, repairs, inspections and incidents. */
 class VehicleDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFleetDetailBinding
@@ -62,6 +68,8 @@ class VehicleDetailActivity : AppCompatActivity() {
     private var inspections: List<InspectionEntity> = emptyList()
     private var plans: List<ServicePlanEntity> = emptyList()
     private var serviceLogs: List<ServiceLogEntity> = emptyList()
+    private var work: List<DailyWorkEntity> = emptyList()
+    private var incidents: List<IncidentEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,6 +123,14 @@ class VehicleDetailActivity : AppCompatActivity() {
             serviceLogs = list
             render()
         }
+        repository.recentDailyWork(vehicleId, RECENT_WORK_ROWS).observe(this) { list ->
+            work = list
+            render()
+        }
+        repository.vehicleIncidents(vehicleId).observe(this) { list ->
+            incidents = list
+            render()
+        }
     }
 
     private fun render() {
@@ -157,9 +173,12 @@ class VehicleDetailActivity : AppCompatActivity() {
         expiryRow(getString(R.string.field_technical_expiry), v.technicalInspectionExpiry)
 
         renderFuel(meterType)
+        renderWork(v)
         renderServices(v)
         renderRepairs()
         renderInspection()
+
+        renderIncidents()
 
         sections.section(getString(R.string.detail_section_driver_history))
         if (history.isEmpty()) {
@@ -214,6 +233,43 @@ class VehicleDetailActivity : AppCompatActivity() {
                 FleetFormat.date(log.timestamp),
                 detail,
                 onClick = if (Session.canEdit()) ({ FuelFormActivity.start(this, fuelId = log.id) }) else null
+            )
+        }
+    }
+
+    /** The last few days of recorded work, with this vehicle type's own metrics. */
+    private fun renderWork(v: VehicleEntity) {
+        sections.section(getString(R.string.home_daily_work))
+        if (work.isEmpty()) {
+            sections.note(getString(R.string.work_none_for_vehicle))
+            return
+        }
+        val fields = WorkMetrics.fieldsFor(v.categoryEnum())
+        work.forEach { r ->
+            val text = fields.mapNotNull { f ->
+                when (f) {
+                    WorkMetrics.Field.TRIPS -> r.trips?.let { getString(R.string.metric_trips, it) }
+                    WorkMetrics.Field.CONCRETE_M3 -> r.concreteM3?.let { getString(R.string.metric_m3, FleetFormat.decimal(it)) }
+                    WorkMetrics.Field.MINE_TRIPS -> r.mineTrips?.let { getString(R.string.metric_mine, it) }
+                    WorkMetrics.Field.DEBRIS_TRIPS -> r.debrisTrips?.let { getString(R.string.metric_debris, it) }
+                }
+            }.plus(listOfNotNull(r.driverName)).joinToString(" · ").ifEmpty { r.notes ?: FleetFormat.EMPTY }
+            sections.row(
+                FleetFormat.date(r.date), text.toPersianDigitsInString(),
+                onClick = if (Session.canEdit()) ({ DailyWorkFormActivity.start(this, v.id, r.date) }) else null
+            )
+        }
+    }
+
+    private fun renderIncidents() {
+        if (incidents.isEmpty()) return
+        sections.section(getString(R.string.home_incidents))
+        incidents.take(RECENT_INCIDENT_ROWS).forEach { i ->
+            sections.row(
+                FleetFormat.date(i.occurredAt),
+                "${i.typeEnum().displayName}: ${i.subject}".toPersianDigitsInString(),
+                if (i.typeEnum() == IncidentType.ACCIDENT) R.color.danger_red else null,
+                onClick = if (Session.canEdit()) ({ IncidentFormActivity.start(this, incidentId = i.id) }) else null
             )
         }
     }
@@ -360,6 +416,8 @@ class VehicleDetailActivity : AppCompatActivity() {
             menu.add(Menu.NONE, MENU_ADD_REPAIR, Menu.NONE, R.string.work_order_add)
             menu.add(Menu.NONE, MENU_INSPECT, Menu.NONE, R.string.inspection_submit)
             menu.add(Menu.NONE, MENU_SERVICE, Menu.NONE, R.string.service_log_add)
+            menu.add(Menu.NONE, MENU_WORK, Menu.NONE, R.string.daily_work_add)
+            menu.add(Menu.NONE, MENU_INCIDENT, Menu.NONE, R.string.incident_add)
             menu.add(Menu.NONE, MENU_EDIT, Menu.NONE, R.string.action_edit)
             menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
         }
@@ -381,6 +439,14 @@ class VehicleDetailActivity : AppCompatActivity() {
         }
         MENU_SERVICE -> {
             ServiceLogFormActivity.start(this, vehicleId)
+            true
+        }
+        MENU_WORK -> {
+            DailyWorkFormActivity.start(this, vehicleId, System.currentTimeMillis())
+            true
+        }
+        MENU_INCIDENT -> {
+            IncidentFormActivity.start(this, vehicleId = vehicleId)
             true
         }
         MENU_EDIT -> {
@@ -408,6 +474,10 @@ class VehicleDetailActivity : AppCompatActivity() {
         private const val MENU_ADD_REPAIR = 4
         private const val MENU_INSPECT = 5
         private const val MENU_SERVICE = 6
+        private const val MENU_WORK = 7
+        private const val MENU_INCIDENT = 8
+        private const val RECENT_WORK_ROWS = 7
+        private const val RECENT_INCIDENT_ROWS = 5
 
         fun start(context: Context, vehicleId: String) {
             context.startActivity(Intent(context, VehicleDetailActivity::class.java).putExtra(EXTRA_ID, vehicleId))

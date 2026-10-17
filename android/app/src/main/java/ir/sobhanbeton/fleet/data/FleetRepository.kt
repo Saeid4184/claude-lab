@@ -38,6 +38,8 @@ class FleetRepository private constructor(context: Context) {
     private val expenseNotesCol = firestore.collection(CloudSync.COLLECTION_EXPENSE_NOTES)
     private val servicePlansCol = firestore.collection(CloudSync.COLLECTION_SERVICE_PLANS)
     private val serviceLogsCol = firestore.collection(CloudSync.COLLECTION_SERVICE_LOGS)
+    private val dailyWorkCol = firestore.collection(CloudSync.COLLECTION_DAILY_WORK)
+    private val incidentsCol = firestore.collection(CloudSync.COLLECTION_INCIDENTS)
 
     fun startSync() = cloudSync.start()
 
@@ -526,6 +528,114 @@ class FleetRepository private constructor(context: Context) {
 
     suspend fun deleteServiceLog(id: String): Result<Unit> = writeResult {
         awaitWrite(serviceLogsCol.document(id).delete())
+    }
+
+    // ---------------------------------------------------------------- daily work (performance)
+
+    fun dailyWorkForDay(dayKey: Int): LiveData<List<DailyWorkEntity>> = db.dailyWorkDao().getForDayLive(dayKey)
+    fun dailyWorkInRange(fromKey: Int, toKey: Int): LiveData<List<DailyWorkEntity>> = db.dailyWorkDao().getInRangeLive(fromKey, toKey)
+    fun recentDailyWork(vehicleId: String, limit: Int): LiveData<List<DailyWorkEntity>> = db.dailyWorkDao().getRecentForVehicleLive(vehicleId, limit)
+    fun driverDailyWork(driverId: String, fromKey: Int, toKey: Int): LiveData<List<DailyWorkEntity>> =
+        db.dailyWorkDao().getForDriverInRangeLive(driverId, fromKey, toKey)
+    suspend fun dailyWorkInRangeOnce(fromKey: Int, toKey: Int): List<DailyWorkEntity> = db.dailyWorkDao().getInRange(fromKey, toKey)
+    suspend fun getDailyWork(id: String): DailyWorkEntity? = db.dailyWorkDao().getById(id)
+
+    /**
+     * Saves a vehicle's work for a day — always to the same document per vehicle and day, so a
+     * second entry for that day corrects the first instead of duplicating it. With no driver
+     * given, the driver assigned on that day is used. Only the fields that apply to the
+     * vehicle's category are kept ([WorkMetrics]).
+     */
+    suspend fun saveDailyWork(input: DailyWorkEntity): Result<String> = writeResult {
+        val vehicle = requireNotNull(db.vehicleDao().getById(input.vehicleId)) { "ماشین را انتخاب کنید" }
+        val fields = WorkMetrics.fieldsFor(vehicle.categoryEnum())
+        val cleaned = input.copy(
+            trips = input.trips.takeIf { WorkMetrics.Field.TRIPS in fields },
+            concreteM3 = input.concreteM3.takeIf { WorkMetrics.Field.CONCRETE_M3 in fields },
+            mineTrips = input.mineTrips.takeIf { WorkMetrics.Field.MINE_TRIPS in fields },
+            debrisTrips = input.debrisTrips.takeIf { WorkMetrics.Field.DEBRIS_TRIPS in fields }
+        )
+        require(listOf(cleaned.trips, cleaned.mineTrips, cleaned.debrisTrips).all { (it ?: 0) >= 0 } && (cleaned.concreteM3 ?: 0.0) >= 0.0) {
+            "مقدارها نمی‌توانند منفی باشند"
+        }
+        require(
+            listOf(cleaned.trips, cleaned.mineTrips, cleaned.debrisTrips).any { it != null } || cleaned.concreteM3 != null || !cleaned.notes.isNullOrBlank()
+        ) { "حداقل یکی از مقدارها یا توضیحات را وارد کنید" }
+
+        val dayKey = DailyWorkStats.dayKey(cleaned.date)
+        val driver = cleaned.driverId?.let { db.driverDao().getById(it) }
+        val assigned = if (cleaned.driverId == null) db.assignmentDao().getForVehicleAt(vehicle.id, cleaned.date) else null
+        val id = DailyWorkEntity.idFor(vehicle.id, dayKey)
+        val existing = db.dailyWorkDao().getById(id)
+        // Moving a record to another day/vehicle on edit: drop the old document.
+        val replaced = input.id.takeIf { it.isNotEmpty() && it != id }
+        val now = System.currentTimeMillis()
+        val toWrite = cleaned.copy(
+            id = id,
+            vehiclePlate = vehicle.plate,
+            category = vehicle.category,
+            dayKey = dayKey,
+            driverId = driver?.id ?: assigned?.driverId,
+            driverName = driver?.name ?: assigned?.driverName,
+            notes = cleaned.notes?.trim()?.ifEmpty { null },
+            performedByName = existing?.performedByName ?: Session.currentUserOrGuestLabel(),
+            createdAt = existing?.createdAt ?: now,
+            updatedAt = now
+        )
+        val batch = firestore.batch()
+        batch.set(dailyWorkCol.document(id), toWrite)
+        if (replaced != null) batch.delete(dailyWorkCol.document(replaced))
+        awaitWrite(batch.commit())
+        id
+    }
+
+    suspend fun deleteDailyWork(id: String): Result<Unit> = writeResult {
+        awaitWrite(dailyWorkCol.document(id).delete())
+    }
+
+    // ---------------------------------------------------------------- incidents & violations
+
+    fun incidents(): LiveData<List<IncidentEntity>> = db.incidentDao().getAllLive()
+    fun vehicleIncidents(vehicleId: String): LiveData<List<IncidentEntity>> = db.incidentDao().getForVehicleLive(vehicleId)
+    fun driverIncidents(driverId: String): LiveData<List<IncidentEntity>> = db.incidentDao().getForDriverLive(driverId)
+    suspend fun incidentsInRange(from: Long, to: Long): List<IncidentEntity> = db.incidentDao().getInRange(from, to)
+    suspend fun getIncident(id: String): IncidentEntity? = db.incidentDao().getById(id)
+
+    /** Creates or corrects an incident; plate and driver names are copied, and when a vehicle is
+     *  given without a driver, the driver assigned at that time is filled in. */
+    suspend fun saveIncident(input: IncidentEntity): Result<String> = writeResult {
+        require(input.subject.isNotBlank()) { "موضوع را انتخاب کنید" }
+        require(input.vehicleId != null || input.driverId != null) { "ماشین یا راننده را انتخاب کنید" }
+        val vehicle = input.vehicleId?.let { db.vehicleDao().getById(it) }
+        val driver = input.driverId?.let { db.driverDao().getById(it) }
+        val assigned = if (driver == null && vehicle != null) db.assignmentDao().getForVehicleAt(vehicle.id, input.occurredAt) else null
+        val now = System.currentTimeMillis()
+        val existing = input.id.takeIf { it.isNotEmpty() }?.let { db.incidentDao().getById(it) }
+        val ref = if (existing != null) incidentsCol.document(existing.id) else incidentsCol.document()
+        val plate = vehicle?.plate ?: input.vehiclePlate
+        val driverId = driver?.id ?: assigned?.driverId ?: input.driverId
+        val driverName = driver?.name ?: assigned?.driverName ?: input.driverName
+        val type = input.typeEnum()
+        val toWrite = input.copy(
+            id = ref.id,
+            vehiclePlate = plate,
+            driverId = driverId,
+            driverName = driverName,
+            subject = input.subject.trim(),
+            summaryText = IncidentCatalog.buildSummary(
+                type, ir.sobhanbeton.fleet.util.JalaliCalendar.formatDate(input.occurredAt), input.subject.trim(),
+                plate, driverName, input.severity, input.location, input.actionTaken
+            ),
+            performedByName = existing?.performedByName ?: Session.currentUserOrGuestLabel(),
+            createdAt = existing?.createdAt ?: now,
+            updatedAt = now
+        )
+        awaitWrite(ref.set(toWrite))
+        ref.id
+    }
+
+    suspend fun deleteIncident(id: String): Result<Unit> = writeResult {
+        awaitWrite(incidentsCol.document(id).delete())
     }
 
     // ---------------------------------------------------------------- private expense notes
