@@ -32,6 +32,7 @@ class FleetRepository private constructor(context: Context) {
     private val vehiclesCol = firestore.collection(CloudSync.COLLECTION_VEHICLES)
     private val driversCol = firestore.collection(CloudSync.COLLECTION_DRIVERS)
     private val assignmentsCol = firestore.collection(CloudSync.COLLECTION_ASSIGNMENTS)
+    private val fuelCol = firestore.collection(CloudSync.COLLECTION_FUEL_LOGS)
 
     fun startSync() = cloudSync.start()
 
@@ -239,6 +240,54 @@ class FleetRepository private constructor(context: Context) {
                 batch.update(driversCol.document(a.driverId), mapOf("currentVehicleId" to null, "currentVehiclePlate" to null, "updatedAt" to now))
             }
         }
+    }
+
+    // ---------------------------------------------------------------- fuel
+
+    fun fuelInRange(from: Long, to: Long): LiveData<List<FuelLogEntity>> = db.fuelLogDao().getInRangeLive(from, to)
+    fun vehicleFuel(vehicleId: String): LiveData<List<FuelLogEntity>> = db.fuelLogDao().getForVehicleLive(vehicleId)
+    fun fuelSince(from: Long): LiveData<List<FuelLogEntity>> = db.fuelLogDao().getSinceLive(from)
+    suspend fun fuelInRangeOnce(from: Long, to: Long): List<FuelLogEntity> = db.fuelLogDao().getInRange(from, to)
+    suspend fun vehicleFuelOnce(vehicleId: String): List<FuelLogEntity> = db.fuelLogDao().getForVehicle(vehicleId)
+    suspend fun getFuelLog(id: String): FuelLogEntity? = db.fuelLogDao().getById(id)
+
+    /** Who was driving [vehicleId] at [at], from the assignment history. */
+    suspend fun driverAt(vehicleId: String, at: Long): AssignmentEntity? = db.assignmentDao().getForVehicleAt(vehicleId, at)
+
+    /**
+     * Creates (blank id) or corrects a fuel log. The plate/category and the driver on duty at
+     * [FuelLogEntity.timestamp] are filled in here. A meter reading at least as high as the
+     * vehicle's current one also becomes its current meter — in the same batch, so the vehicle
+     * screen and the fuel history never disagree.
+     */
+    suspend fun saveFuel(input: FuelLogEntity): Result<String> = writeResult {
+        require(input.liters > 0.0) { "مقدار سوخت را وارد کنید" }
+        val vehicle = requireNotNull(db.vehicleDao().getById(input.vehicleId)) { "ماشین را انتخاب کنید" }
+        val existing = input.id.takeIf { it.isNotEmpty() }?.let { db.fuelLogDao().getById(it) }
+        val driver = db.assignmentDao().getForVehicleAt(vehicle.id, input.timestamp)
+        val now = System.currentTimeMillis()
+        val ref = if (existing != null) fuelCol.document(existing.id) else fuelCol.document()
+        val toWrite = input.copy(
+            id = ref.id,
+            vehiclePlate = vehicle.plate,
+            category = vehicle.category,
+            driverId = driver?.driverId,
+            driverName = driver?.driverName,
+            performedByName = existing?.performedByName ?: Session.currentUserOrGuestLabel(),
+            createdAt = existing?.createdAt ?: now
+        )
+        val batch = firestore.batch()
+        batch.set(ref, toWrite)
+        val reading = toWrite.meterReading
+        if (reading != null && reading >= (vehicle.currentMeter ?: Long.MIN_VALUE)) {
+            batch.update(vehiclesCol.document(vehicle.id), mapOf("currentMeter" to reading, "meterUpdatedAt" to toWrite.timestamp, "updatedAt" to now))
+        }
+        awaitWrite(batch.commit())
+        ref.id
+    }
+
+    suspend fun deleteFuel(id: String): Result<Unit> = writeResult {
+        awaitWrite(fuelCol.document(id).delete())
     }
 
     // ---------------------------------------------------------------- bulk import

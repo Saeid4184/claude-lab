@@ -69,6 +69,16 @@ class ScreensSmokeTest {
     @Test fun drivers() { open(DriversActivity::class.java) }
     @Test fun expiring() { open(ExpiringDocumentsActivity::class.java) }
     @Test fun bulkImport() { open(BulkImportActivity::class.java) }
+    @Test fun fuel() { open(ir.sobhanbeton.fleet.ui.fuel.FuelActivity::class.java) }
+
+    @Test
+    fun fuelFormRequiresVehicle() {
+        val activity = open(ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity::class.java)
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        activity.findViewById<TextView>(R.id.btnSave).performClick()
+        val til = activity.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilVehicle)
+        assertTrue(til.error != null)
+    }
 
     @Test
     fun vehicleDetail() {

@@ -131,6 +131,18 @@
                 android:textColor="@color/concrete_700"
                 android:textSize="@dimen/text_size_13"
                 tools:text="⚠ ۳ مدرک منقضی یا در ۳۰ روز آینده منقضی می‌شود" />
+
+            <TextView
+                android:id="@+id/tvFuelAlert"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dim_4"
+                android:gravity="center"
+                android:textColor="@color/danger_red"
+                android:textSize="@dimen/text_size_13"
+                android:visibility="gone"
+                tools:text="⛽ مصرف سوخت ۱ ماشین غیرعادی بالا رفته"
+                tools:visibility="visible" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

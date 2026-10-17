@@ -16,11 +16,14 @@ import ir.sobhanbeton.fleet.data.AuthRepository
 import ir.sobhanbeton.fleet.data.DriverEntity
 import ir.sobhanbeton.fleet.data.ExpiryAlerts
 import ir.sobhanbeton.fleet.data.FleetRepository
+import ir.sobhanbeton.fleet.data.FuelLogEntity
+import ir.sobhanbeton.fleet.data.FuelStats
 import ir.sobhanbeton.fleet.data.Session
 import ir.sobhanbeton.fleet.data.VehicleEntity
 import ir.sobhanbeton.fleet.data.VehicleStatus
 import ir.sobhanbeton.fleet.databinding.ActivityMainBinding
 import ir.sobhanbeton.fleet.ui.drivers.DriversActivity
+import ir.sobhanbeton.fleet.ui.fuel.FuelActivity
 import ir.sobhanbeton.fleet.ui.vehicles.VehiclesActivity
 import ir.sobhanbeton.fleet.util.AnimUtils
 import ir.sobhanbeton.fleet.util.NetworkMonitor
@@ -28,6 +31,7 @@ import ir.sobhanbeton.fleet.util.toPersianDigits
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 /** Home screen: a menu of the fleet-management sections (vehicles, drivers, fuel, repairs,
  *  periodic service, daily work, incidents, reports). Sections not built yet are listed with
@@ -80,6 +84,7 @@ class MainActivity : AppCompatActivity() {
             when (item.destination) {
                 HomeDestination.VEHICLES -> startActivity(Intent(this, VehiclesActivity::class.java))
                 HomeDestination.DRIVERS -> startActivity(Intent(this, DriversActivity::class.java))
+                HomeDestination.FUEL -> startActivity(Intent(this, FuelActivity::class.java))
                 else -> Unit
             }
         }
@@ -118,6 +123,22 @@ class MainActivity : AppCompatActivity() {
         }
         repository.vehicles().observe(this) { vehicles = it; render() }
         repository.drivers().observe(this) { drivers = it; render() }
+        observeFuelAlerts()
+    }
+
+    /** One extra line on the card when some vehicle's recent fuel use jumped (tap → fuel). */
+    private fun observeFuelAlerts() {
+        var vehicles: List<VehicleEntity> = emptyList()
+        var logs: List<FuelLogEntity> = emptyList()
+        fun render() {
+            val count = FuelStats.anomalies(logs, vehicles).size
+            binding.tvFuelAlert.visibility = if (count > 0) android.view.View.VISIBLE else android.view.View.GONE
+            binding.tvFuelAlert.text = getString(R.string.summary_fuel_anomalies, count).toPersianDigitsInString()
+        }
+        val from = System.currentTimeMillis() - TimeUnit.DAYS.toMillis((FuelStats.RECENT_DAYS + FuelStats.BASELINE_DAYS).toLong())
+        repository.vehicles().observe(this) { vehicles = it; render() }
+        repository.fuelSince(from).observe(this) { logs = it; render() }
+        binding.tvFuelAlert.setOnClickListener { startActivity(Intent(this, FuelActivity::class.java)) }
     }
 
     private fun summaryCount(count: Int, status: VehicleStatus): String =
@@ -134,8 +155,7 @@ class MainActivity : AppCompatActivity() {
         ),
         HomeMenuItem(
             HomeDestination.FUEL, R.string.home_fuel, R.string.home_subtitle_fuel,
-            R.drawable.ic_inventory, R.color.accent_item_log, R.color.accent_item_log_bg,
-            comingInPhase = 2
+            R.drawable.ic_inventory, R.color.accent_item_log, R.color.accent_item_log_bg
         ),
         HomeMenuItem(
             HomeDestination.REPAIRS, R.string.home_repairs, R.string.home_subtitle_repairs,

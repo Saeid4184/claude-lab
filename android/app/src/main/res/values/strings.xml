@@ -163,6 +163,44 @@
     <string name="vehicles_empty_expert">هنوز ماشینی ثبت نشده است. با دکمهٔ پایین اضافه کنید، یا از ⋮ ← ورود گروهی کل فهرست را یکجا وارد کنید.</string>
     <string name="vehicles_summary">%1$d ماشین — %2$d فعال، %3$d در تعمیر، %4$d خارج از سرویس</string>
 
+    <!-- Phase 2: fuel -->
+    <string name="fuel_add">ثبت سوخت</string>
+    <string name="fuel_edit">اصلاح سوخت‌گیری</string>
+    <string name="fuel_delete_confirm">این سوخت‌گیری حذف شود؟</string>
+    <string name="fuel_view_fills">ریز سوخت‌گیری‌ها</string>
+    <string name="fuel_view_per_vehicle">به تفکیک ماشین</string>
+    <string name="fuel_fills_header">سوخت‌گیری‌ها (%1$d)</string>
+    <string name="fuel_per_vehicle_header">ماشین‌ها (%1$d)</string>
+    <string name="fuel_fills_count">%1$d بار</string>
+    <string name="fuel_anomalies_header">⚠ مصرف غیرعادی (%1$d)</string>
+    <string name="fuel_anomaly_detail">۳۰ روز اخیر: %1$s — قبل از آن: %2$s</string>
+    <string name="fuel_no_consumption">مصرف: کارکرد کافی ثبت نشده</string>
+    <string name="fuel_empty">در این بازه سوختی ثبت نشده است</string>
+    <string name="fuel_none_for_vehicle">هنوز سوختی برای این ماشین ثبت نشده است</string>
+    <string name="fuel_average_label">میانگین مصرف (%1$d روز اخیر)</string>
+    <string name="fuel_total_label">جمع سوخت (%1$d روز اخیر)</string>
+    <string name="fuel_previous_reading">آخرین ثبت: %1$s (%2$s)</string>
+    <string name="fuel_current_meter">کارکرد فعلی ماشین: %1$s</string>
+    <string name="fuel_meter_backwards_title">کارکرد کمتر از قبل</string>
+    <string name="fuel_meter_backwards">کارکرد واردشده (%1$s) از آخرین ثبت قبلی (%2$s) کمتر است. اگر کیلومترشمار/ساعت‌شمار عوض شده درست است؛ وگرنه احتمالاً اشتباه تایپی است. ذخیره شود؟</string>
+    <string name="field_vehicle">ماشین</string>
+    <string name="field_fuel_date">تاریخ</string>
+    <string name="field_liters">مقدار گازوئیل (لیتر)</string>
+    <string name="field_meter_at_fuel">کارکرد هنگام سوخت‌گیری (اختیاری)</string>
+    <string name="field_meter_at_fuel_unit">%1$s هنگام سوخت‌گیری (اختیاری)</string>
+    <string name="field_fuel_source">منبع سوخت</string>
+    <string name="field_fuel_cost">مبلغ (اختیاری)</string>
+    <string name="unit_rial">ریال</string>
+    <string name="liters_format">%1$s لیتر</string>
+    <string name="rial_format">%1$s ریال</string>
+    <string name="range_format">%1$s تا %2$s</string>
+    <string name="consumption_per_100km">%1$s لیتر در ۱۰۰ کیلومتر</string>
+    <string name="consumption_per_hour">%1$s لیتر در ساعت</string>
+    <string name="choose_range">انتخاب بازهٔ تاریخ</string>
+    <string name="export_excel">خروجی اکسل</string>
+    <string name="error_positive_number">یک عدد بزرگ‌تر از صفر وارد کنید</string>
+    <string name="summary_fuel_anomalies">⛽ مصرف سوخت %1$d ماشین غیرعادی بالا رفته — بررسی کنید</string>
+
     <string-array name="license_types">
         <item>پایه یکم</item>
         <item>پایه دوم</item>

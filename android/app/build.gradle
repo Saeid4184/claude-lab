@@ -64,10 +64,21 @@ android {
         viewBinding true
     }
 
+    // Room writes each schema version to app/schemas (committed), so migrations can be
+    // verified against the exact previous schema in MigrationTest. Robolectric reads assets
+    // from the variant under test, so the JSON is added to debug assets (never to release).
+    sourceSets {
+        debug.assets.srcDirs += files("$projectDir/schemas")
+    }
+
     testOptions {
         // Robolectric smoke tests inflate the real layouts/themes.
         unitTests.includeAndroidResources = true
     }
+}
+
+ksp {
+    arg('room.schemaLocation', "$projectDir/schemas")
 }
 
 dependencies {
@@ -104,6 +115,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.11.1'
     testImplementation 'androidx.test:core-ktx:1.5.0'
+    testImplementation 'androidx.room:room-testing:2.6.1'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }

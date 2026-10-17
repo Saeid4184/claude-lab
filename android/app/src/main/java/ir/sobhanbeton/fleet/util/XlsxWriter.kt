@@ -127,8 +127,16 @@ object XlsxWriter {
         return sb.toString()
     }
 
+    /** Plain Latin-digit numbers (litres, costs, km) become real numeric cells so they can be
+     *  summed/charted in Excel. Anything with a leading zero (phone, national ID) stays text so
+     *  the zero isn't lost. */
+    private val NUMERIC = Regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?")
+
     private fun cellXml(colIndex: Int, rowIndex: Int, value: String, headerStyle: Boolean): String {
         val ref = "${columnLetter(colIndex)}$rowIndex"
+        if (!headerStyle && value.length <= 15 && NUMERIC.matches(value)) {
+            return "<c r=\"$ref\"><v>$value</v></c>"
+        }
         val style = if (headerStyle) " s=\"1\"" else ""
         return "<c r=\"$ref\" t=\"inlineStr\"$style><is><t xml:space=\"preserve\">${escapeXml(value)}</t></is></c>"
     }

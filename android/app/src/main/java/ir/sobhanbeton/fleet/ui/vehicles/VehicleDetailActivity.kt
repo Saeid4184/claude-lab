@@ -14,6 +14,9 @@ import ir.sobhanbeton.fleet.data.AssignmentEntity
 import ir.sobhanbeton.fleet.data.DriverStatus
 import ir.sobhanbeton.fleet.data.ExpiryAlerts
 import ir.sobhanbeton.fleet.data.FleetRepository
+import ir.sobhanbeton.fleet.data.FuelLogEntity
+import ir.sobhanbeton.fleet.data.FuelStats
+import ir.sobhanbeton.fleet.data.MeterType
 import ir.sobhanbeton.fleet.data.Session
 import ir.sobhanbeton.fleet.data.VehicleEntity
 import ir.sobhanbeton.fleet.data.VehicleStatus
@@ -25,12 +28,14 @@ import ir.sobhanbeton.fleet.ui.common.Dialogs.reportSave
 import ir.sobhanbeton.fleet.ui.common.FleetFormat
 import ir.sobhanbeton.fleet.ui.common.JalaliDatePickerDialog
 import ir.sobhanbeton.fleet.ui.drivers.DriverDetailActivity
+import ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 /** "شناسنامهٔ ماشین": everything known about one vehicle, its driver history, and (expert
  *  only) the actions to change driver/status, edit or delete it. Later phases add its fuel,
- *  repair and service history here. */
+ *  repair and service history here; phase 2 added fuel. */
 class VehicleDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFleetDetailBinding
@@ -40,6 +45,7 @@ class VehicleDetailActivity : AppCompatActivity() {
 
     private var vehicle: VehicleEntity? = null
     private var history: List<AssignmentEntity> = emptyList()
+    private var fuel: List<FuelLogEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +77,10 @@ class VehicleDetailActivity : AppCompatActivity() {
         }
         repository.vehicleAssignments(vehicleId).observe(this) { list ->
             history = list
+            render()
+        }
+        repository.vehicleFuel(vehicleId).observe(this) { list ->
+            fuel = list
             render()
         }
     }
@@ -114,6 +124,8 @@ class VehicleDetailActivity : AppCompatActivity() {
         expiryRow(getString(R.string.field_body_insurance_expiry), v.bodyInsuranceExpiry)
         expiryRow(getString(R.string.field_technical_expiry), v.technicalInspectionExpiry)
 
+        renderFuel(meterType)
+
         sections.section(getString(R.string.detail_section_driver_history))
         if (history.isEmpty()) {
             sections.note(getString(R.string.history_empty))
@@ -131,6 +143,43 @@ class VehicleDetailActivity : AppCompatActivity() {
         if (!v.notes.isNullOrBlank()) {
             sections.section(getString(R.string.form_section_other))
             sections.row(getString(R.string.field_notes), v.notes)
+        }
+    }
+
+    /** Average consumption over the last [FUEL_AVERAGE_DAYS] days and the latest fills. */
+    private fun renderFuel(meterType: MeterType) {
+        sections.section(getString(R.string.home_fuel))
+        val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(FUEL_AVERAGE_DAYS)
+        val recent = fuel.filter { it.timestamp >= since }
+        val consumption = FuelStats.consumption(recent, meterType)
+        sections.row(
+            getString(R.string.fuel_average_label, FUEL_AVERAGE_DAYS.toInt()).toPersianDigitsInString(),
+            consumption?.let {
+                getString(
+                    if (meterType == MeterType.KM) R.string.consumption_per_100km else R.string.consumption_per_hour,
+                    "%.1f".format(java.util.Locale.US, it.rate)
+                ).toPersianDigitsInString()
+            } ?: getString(R.string.fuel_no_consumption)
+        )
+        sections.row(
+            getString(R.string.fuel_total_label, FUEL_AVERAGE_DAYS.toInt()).toPersianDigitsInString(),
+            getString(R.string.liters_format, FuelFormActivity.formatLiters(recent.sumOf { it.liters })).toPersianDigitsInString()
+        )
+        if (fuel.isEmpty()) {
+            sections.note(getString(R.string.fuel_none_for_vehicle))
+            return
+        }
+        fuel.take(RECENT_FUEL_ROWS).forEach { log ->
+            val detail = listOfNotNull(
+                getString(R.string.liters_format, FuelFormActivity.formatLiters(log.liters)),
+                log.meterReading?.let { "${FleetFormat.number(it)} ${meterType.unit}" },
+                log.driverName
+            ).joinToString(" · ").toPersianDigitsInString()
+            sections.row(
+                FleetFormat.date(log.timestamp),
+                detail,
+                onClick = if (Session.canEdit()) ({ FuelFormActivity.start(this, fuelId = log.id) }) else null
+            )
         }
     }
 
@@ -205,6 +254,7 @@ class VehicleDetailActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (Session.canEdit()) {
+            menu.add(Menu.NONE, MENU_ADD_FUEL, Menu.NONE, R.string.fuel_add)
             menu.add(Menu.NONE, MENU_EDIT, Menu.NONE, R.string.action_edit)
             menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
         }
@@ -212,6 +262,10 @@ class VehicleDetailActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        MENU_ADD_FUEL -> {
+            FuelFormActivity.start(this, vehicleId = vehicleId)
+            true
+        }
         MENU_EDIT -> {
             VehicleFormActivity.start(this, vehicleId)
             true
@@ -230,6 +284,9 @@ class VehicleDetailActivity : AppCompatActivity() {
         private const val EXTRA_ID = "vehicle_id"
         private const val MENU_EDIT = 1
         private const val MENU_DELETE = 2
+        private const val MENU_ADD_FUEL = 3
+        private const val FUEL_AVERAGE_DAYS = 90L
+        private const val RECENT_FUEL_ROWS = 5
 
         fun start(context: Context, vehicleId: String) {
             context.startActivity(Intent(context, VehicleDetailActivity::class.java).putExtra(EXTRA_ID, vehicleId))
