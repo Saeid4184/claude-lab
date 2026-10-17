@@ -36,6 +36,8 @@ class FleetRepository private constructor(context: Context) {
     private val inspectionsCol = firestore.collection(CloudSync.COLLECTION_INSPECTIONS)
     private val workOrdersCol = firestore.collection(CloudSync.COLLECTION_WORK_ORDERS)
     private val expenseNotesCol = firestore.collection(CloudSync.COLLECTION_EXPENSE_NOTES)
+    private val servicePlansCol = firestore.collection(CloudSync.COLLECTION_SERVICE_PLANS)
+    private val serviceLogsCol = firestore.collection(CloudSync.COLLECTION_SERVICE_LOGS)
 
     fun startSync() = cloudSync.start()
 
@@ -451,6 +453,79 @@ class FleetRepository private constructor(context: Context) {
             vehiclesCol.document(vehicleId),
             mapOf("status" to next.name, "statusNote" to note, "statusChangedAt" to now, "updatedAt" to now)
         )
+    }
+
+    // ---------------------------------------------------------------- periodic service
+
+    fun servicePlans(): LiveData<List<ServicePlanEntity>> = db.servicePlanDao().getAllLive()
+    fun serviceLogs(): LiveData<List<ServiceLogEntity>> = db.serviceLogDao().getAllLive()
+    suspend fun servicePlansOnce(): List<ServicePlanEntity> = db.servicePlanDao().getAllOnce()
+    suspend fun serviceLogsOnce(): List<ServiceLogEntity> = db.serviceLogDao().getAllOnce()
+    suspend fun getServicePlan(id: String): ServicePlanEntity? = db.servicePlanDao().getById(id)
+    suspend fun getServiceLog(id: String): ServiceLogEntity? = db.serviceLogDao().getById(id)
+    suspend fun serviceLogsInRange(from: Long, to: Long): List<ServiceLogEntity> = db.serviceLogDao().getInRange(from, to)
+
+    suspend fun saveServicePlan(input: ServicePlanEntity): Result<String> = writeResult {
+        require(input.name.isNotBlank()) { "نام سرویس را وارد کنید" }
+        require(input.intervalMeter != null || input.intervalDays != null) { "حداقل یکی از دو فاصله (کارکرد یا روز) را وارد کنید" }
+        require((input.intervalMeter ?: 1) > 0 && (input.intervalDays ?: 1) > 0) { "فاصله باید بزرگ‌تر از صفر باشد" }
+        val now = System.currentTimeMillis()
+        val existing = input.id.takeIf { it.isNotEmpty() }?.let { db.servicePlanDao().getById(it) }
+        val ref = if (existing != null) servicePlansCol.document(existing.id) else servicePlansCol.document()
+        awaitWrite(ref.set(input.copy(id = ref.id, name = input.name.trim(), createdAt = existing?.createdAt ?: now, updatedAt = now)))
+        ref.id
+    }
+
+    /** Removes a plan; services already logged under it stay in history (they carry its name). */
+    suspend fun deleteServicePlan(id: String): Result<Unit> = writeResult {
+        awaitWrite(servicePlansCol.document(id).delete())
+    }
+
+    /** Adds [ServiceSchedule.defaultPlans] in one batch — offered only while there are none. */
+    suspend fun addDefaultServicePlans(): Result<Int> = writeResult {
+        require(db.servicePlanDao().getAllOnce().isEmpty()) { "برنامه‌های سرویس از قبل وجود دارند" }
+        val now = System.currentTimeMillis()
+        val batch = firestore.batch()
+        val defaults = ServiceSchedule.defaultPlans()
+        defaults.forEach { p ->
+            val ref = servicePlansCol.document()
+            batch.set(ref, p.copy(id = ref.id, createdAt = now, updatedAt = now))
+        }
+        awaitWrite(batch.commit())
+        defaults.size
+    }
+
+    /**
+     * Records one service visit covering one or more [planIds] (e.g. oil + oil filter + air
+     * filter together) — one log per plan. A meter reading at least as high as the vehicle's
+     * current one also becomes its current meter, in the same batch.
+     */
+    suspend fun logServices(vehicleId: String, planIds: List<String>, doneAt: Long, meterReading: Long?, notes: String?): Result<Int> = writeResult {
+        require(planIds.isNotEmpty()) { "حداقل یک سرویس را انتخاب کنید" }
+        val vehicle = requireNotNull(db.vehicleDao().getById(vehicleId)) { "ماشین را انتخاب کنید" }
+        val now = System.currentTimeMillis()
+        val batch = firestore.batch()
+        for (planId in planIds) {
+            val plan = requireNotNull(db.servicePlanDao().getById(planId)) { "برنامهٔ سرویس پیدا نشد" }
+            val ref = serviceLogsCol.document()
+            batch.set(
+                ref,
+                ServiceLogEntity(
+                    id = ref.id, vehicleId = vehicle.id, vehiclePlate = vehicle.plate, planId = plan.id, planName = plan.name,
+                    doneAt = doneAt, meterReading = meterReading, notes = notes?.trim()?.ifEmpty { null },
+                    performedByName = Session.currentUserOrGuestLabel(), createdAt = now
+                )
+            )
+        }
+        if (meterReading != null && meterReading >= (vehicle.currentMeter ?: Long.MIN_VALUE)) {
+            batch.update(vehiclesCol.document(vehicle.id), mapOf("currentMeter" to meterReading, "meterUpdatedAt" to doneAt, "updatedAt" to now))
+        }
+        awaitWrite(batch.commit())
+        planIds.size
+    }
+
+    suspend fun deleteServiceLog(id: String): Result<Unit> = writeResult {
+        awaitWrite(serviceLogsCol.document(id).delete())
     }
 
     // ---------------------------------------------------------------- private expense notes

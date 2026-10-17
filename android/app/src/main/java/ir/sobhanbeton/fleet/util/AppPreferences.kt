@@ -15,6 +15,7 @@ object AppPreferences {
     private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_AI_API_KEY = "ai_api_key"
+    private const val KEY_DAILY_ALERTS = "daily_alerts"
 
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -50,5 +51,11 @@ object AppPreferences {
     fun getAiApiKey(context: Context): String = prefs(context).getString(KEY_AI_API_KEY, "") ?: ""
     fun setAiApiKey(context: Context, key: String) {
         prefs(context).edit().putString(KEY_AI_API_KEY, key.trim()).apply()
+    }
+
+    // --- Daily reminder notification (see DailyAlertsWorker) ---
+    fun isDailyAlertsEnabled(context: Context): Boolean = prefs(context).getBoolean(KEY_DAILY_ALERTS, true)
+    fun setDailyAlertsEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_DAILY_ALERTS, enabled).apply()
     }
 }

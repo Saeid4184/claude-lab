@@ -41,6 +41,8 @@ class TestApp : Application() {
                     .build()
             )
         }
+        // Robolectric doesn't run androidx.startup, which initialises WorkManager on a device.
+        androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(this)
     }
 }
 
@@ -73,6 +75,9 @@ class ScreensSmokeTest {
     @Test fun inspections() { open(ir.sobhanbeton.fleet.ui.inspections.InspectionsActivity::class.java) }
     @Test fun workOrders() { open(ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity::class.java) }
     @Test fun workOrderForm() { open(ir.sobhanbeton.fleet.ui.repairs.WorkOrderFormActivity::class.java) }
+    @Test fun services() { open(ir.sobhanbeton.fleet.ui.services.ServicesActivity::class.java) }
+    @Test fun serviceLogForm() { open(ir.sobhanbeton.fleet.ui.services.ServiceLogFormActivity::class.java) }
+    @Test fun servicePlanForm() { open(ir.sobhanbeton.fleet.ui.services.ServicePlanFormActivity::class.java) }
     @Test fun expenseNotes() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity::class.java) }
     @Test fun expenseNoteForm() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNoteFormActivity::class.java) }
 

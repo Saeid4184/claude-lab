@@ -36,6 +36,13 @@
                     style="@style/SettingsSwitchRow"
                     android:text="@string/settings_haptic" />
 
+                <View style="@style/SettingsDivider" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchDailyAlerts"
+                    style="@style/SettingsSwitchRow"
+                    android:text="@string/settings_daily_alerts" />
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

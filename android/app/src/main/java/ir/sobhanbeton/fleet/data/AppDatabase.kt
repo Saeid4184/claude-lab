@@ -19,9 +19,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [
         VehicleEntity::class, DriverEntity::class, AssignmentEntity::class, FuelLogEntity::class,
-        InspectionEntity::class, WorkOrderEntity::class, ExpenseNoteEntity::class
+        InspectionEntity::class, WorkOrderEntity::class, ExpenseNoteEntity::class,
+        ServicePlanEntity::class, ServiceLogEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +34,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inspectionDao(): InspectionDao
     abstract fun workOrderDao(): WorkOrderDao
     abstract fun expenseNoteDao(): ExpenseNoteDao
+    abstract fun servicePlanDao(): ServicePlanDao
+    abstract fun serviceLogDao(): ServiceLogDao
 
     companion object {
         @Volatile
@@ -121,4 +124,23 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+/** v3 → v4 (phase 4): periodic service plans and the services done. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `service_plans` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                "`category` TEXT NOT NULL, `intervalMeter` INTEGER, `intervalDays` INTEGER, `notes` TEXT, " +
+                "`createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `service_logs` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, " +
+                "`vehiclePlate` TEXT NOT NULL, `planId` TEXT NOT NULL, `planName` TEXT NOT NULL, `doneAt` INTEGER NOT NULL, " +
+                "`meterReading` INTEGER, `notes` TEXT, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_service_logs_vehicleId` ON `service_logs` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_service_logs_planId` ON `service_logs` (`planId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_service_logs_doneAt` ON `service_logs` (`doneAt`)")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)

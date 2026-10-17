@@ -44,6 +44,12 @@ class CloudSync(private val db: AppDatabase) {
         listeners += mirror(COLLECTION_WORK_ORDERS,
             upsert = { db.workOrderDao().upsert(it.toObject(WorkOrderEntity::class.java)!!) },
             delete = { db.workOrderDao().deleteById(it) })
+        listeners += mirror(COLLECTION_SERVICE_PLANS,
+            upsert = { db.servicePlanDao().upsert(it.toObject(ServicePlanEntity::class.java)!!) },
+            delete = { db.servicePlanDao().deleteById(it) })
+        listeners += mirror(COLLECTION_SERVICE_LOGS,
+            upsert = { db.serviceLogDao().upsert(it.toObject(ServiceLogEntity::class.java)!!) },
+            delete = { db.serviceLogDao().deleteById(it) })
         // Private to the expert: never mirrored onto the manager's phone (rules would refuse
         // the read anyway).
         if (Session.canEdit()) {
@@ -70,6 +76,8 @@ class CloudSync(private val db: AppDatabase) {
             db.inspectionDao().clear()
             db.workOrderDao().clear()
             db.expenseNoteDao().clear()
+            db.servicePlanDao().clear()
+            db.serviceLogDao().clear()
         }
     }
 
@@ -101,5 +109,7 @@ class CloudSync(private val db: AppDatabase) {
         const val COLLECTION_INSPECTIONS = "inspections"
         const val COLLECTION_WORK_ORDERS = "workOrders"
         const val COLLECTION_EXPENSE_NOTES = "expenseNotes"
+        const val COLLECTION_SERVICE_PLANS = "servicePlans"
+        const val COLLECTION_SERVICE_LOGS = "serviceLogs"
     }
 }

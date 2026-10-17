@@ -190,3 +190,48 @@ interface ExpenseNoteDao {
     @Query("DELETE FROM expense_notes")
     suspend fun clear()
 }
+
+@Dao
+interface ServicePlanDao {
+    @Query("SELECT * FROM service_plans ORDER BY category, name")
+    fun getAllLive(): LiveData<List<ServicePlanEntity>>
+
+    @Query("SELECT * FROM service_plans")
+    suspend fun getAllOnce(): List<ServicePlanEntity>
+
+    @Query("SELECT * FROM service_plans WHERE id = :id")
+    suspend fun getById(id: String): ServicePlanEntity?
+
+    @Upsert
+    suspend fun upsert(plan: ServicePlanEntity)
+
+    @Query("DELETE FROM service_plans WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM service_plans")
+    suspend fun clear()
+}
+
+@Dao
+interface ServiceLogDao {
+    @Query("SELECT * FROM service_logs ORDER BY doneAt DESC")
+    fun getAllLive(): LiveData<List<ServiceLogEntity>>
+
+    @Query("SELECT * FROM service_logs")
+    suspend fun getAllOnce(): List<ServiceLogEntity>
+
+    @Query("SELECT * FROM service_logs WHERE doneAt BETWEEN :from AND :to ORDER BY doneAt")
+    suspend fun getInRange(from: Long, to: Long): List<ServiceLogEntity>
+
+    @Query("SELECT * FROM service_logs WHERE id = :id")
+    suspend fun getById(id: String): ServiceLogEntity?
+
+    @Upsert
+    suspend fun upsert(log: ServiceLogEntity)
+
+    @Query("DELETE FROM service_logs WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM service_logs")
+    suspend fun clear()
+}

@@ -18,6 +18,9 @@ import ir.sobhanbeton.fleet.data.ExpiryAlerts
 import ir.sobhanbeton.fleet.data.FleetRepository
 import ir.sobhanbeton.fleet.data.FuelLogEntity
 import ir.sobhanbeton.fleet.data.FuelStats
+import ir.sobhanbeton.fleet.data.ServiceLogEntity
+import ir.sobhanbeton.fleet.data.ServicePlanEntity
+import ir.sobhanbeton.fleet.data.ServiceSchedule
 import ir.sobhanbeton.fleet.data.Session
 import ir.sobhanbeton.fleet.data.VehicleEntity
 import ir.sobhanbeton.fleet.data.VehicleStatus
@@ -25,7 +28,10 @@ import ir.sobhanbeton.fleet.databinding.ActivityMainBinding
 import ir.sobhanbeton.fleet.ui.drivers.DriversActivity
 import ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity
 import ir.sobhanbeton.fleet.ui.inspections.InspectionsActivity
+import ir.sobhanbeton.fleet.notify.DailyAlertsWorker
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity
+import ir.sobhanbeton.fleet.ui.services.ServicesActivity
+import ir.sobhanbeton.fleet.util.AppPreferences
 import ir.sobhanbeton.fleet.ui.fuel.FuelActivity
 import ir.sobhanbeton.fleet.ui.vehicles.VehiclesActivity
 import ir.sobhanbeton.fleet.util.AnimUtils
@@ -90,6 +96,7 @@ class MainActivity : AppCompatActivity() {
                 HomeDestination.FUEL -> startActivity(Intent(this, FuelActivity::class.java))
                 HomeDestination.INSPECTIONS -> startActivity(Intent(this, InspectionsActivity::class.java))
                 HomeDestination.REPAIRS -> startActivity(Intent(this, WorkOrdersActivity::class.java))
+                HomeDestination.SERVICES -> startActivity(Intent(this, ServicesActivity::class.java))
                 HomeDestination.EXPENSES -> startActivity(Intent(this, ExpenseNotesActivity::class.java))
                 else -> Unit
             }
@@ -104,6 +111,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         observeConnectivity()
+        setupDailyAlerts()
+    }
+
+    private val notificationPermission =
+        registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+
+    /** Schedules the once-a-day reminder (if enabled) and, on Android 13+, asks once for the
+     *  notification permission it needs. */
+    private fun setupDailyAlerts() {
+        if (!AppPreferences.isDailyAlertsEnabled(this)) return
+        DailyAlertsWorker.schedule(this)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     /** The card above the menu: vehicles by status, and how many documents need attention. */
@@ -130,6 +153,26 @@ class MainActivity : AppCompatActivity() {
         repository.vehicles().observe(this) { vehicles = it; render() }
         repository.drivers().observe(this) { drivers = it; render() }
         observeFuelAlerts()
+        observeServiceAlerts()
+    }
+
+    /** "N services overdue/due soon" line on the card (tap → services). */
+    private fun observeServiceAlerts() {
+        var vehicles: List<VehicleEntity> = emptyList()
+        var plans: List<ServicePlanEntity> = emptyList()
+        var logs: List<ServiceLogEntity> = emptyList()
+        fun render() {
+            val items = ServiceSchedule.all(vehicles, plans, logs)
+            val overdue = items.count { it.state == ServiceSchedule.State.OVERDUE }
+            val soon = items.count { it.state == ServiceSchedule.State.DUE_SOON }
+            binding.tvServiceAlert.visibility = if (overdue + soon > 0) android.view.View.VISIBLE else android.view.View.GONE
+            binding.tvServiceAlert.text = getString(R.string.summary_services, overdue, soon).toPersianDigitsInString()
+            binding.tvServiceAlert.setTextColor(ContextCompat.getColor(this, if (overdue > 0) R.color.danger_red else R.color.safety_amber))
+        }
+        repository.vehicles().observe(this) { vehicles = it; render() }
+        repository.servicePlans().observe(this) { plans = it; render() }
+        repository.serviceLogs().observe(this) { logs = it; render() }
+        binding.tvServiceAlert.setOnClickListener { startActivity(Intent(this, ServicesActivity::class.java)) }
     }
 
     /** One extra line on the card when some vehicle's recent fuel use jumped (tap → fuel). */
@@ -173,8 +216,7 @@ class MainActivity : AppCompatActivity() {
         ),
         HomeMenuItem(
             HomeDestination.SERVICES, R.string.home_services, R.string.home_subtitle_services,
-            R.drawable.ic_setup, R.color.accent_personnel, R.color.accent_personnel_bg,
-            comingInPhase = 4
+            R.drawable.ic_setup, R.color.accent_personnel, R.color.accent_personnel_bg
         ),
         HomeMenuItem(
             HomeDestination.DAILY_WORK, R.string.home_daily_work, R.string.home_subtitle_daily_work,
@@ -244,6 +286,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.sign_out_confirm_message)
             .setPositiveButton(R.string.menu_sign_out) { _, _ ->
                 repository.stopSyncAndClear()
+                DailyAlertsWorker.cancel(this)
                 authRepository.signOut()
                 startActivity(Intent(this, LoginActivity::class.java))
                 finish()

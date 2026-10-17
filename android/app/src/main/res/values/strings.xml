@@ -290,6 +290,54 @@
     <string name="field_expense_title">بابت</string>
     <string name="field_expense_amount">مبلغ</string>
 
+
+    <!-- Phase 4: periodic service, daily reminder -->
+    <string name="services_tab_due">سررسیده</string>
+    <string name="services_tab_all">وضعیت همه</string>
+    <string name="services_tab_history">سرویس‌های انجام‌شده</string>
+    <string name="services_tab_plans">برنامه‌های سرویس</string>
+    <string name="services_status_sheet">وضعیت فعلی</string>
+    <string name="services_summary">%1$d عقب افتاده — %2$d نزدیک به موعد — %3$d برنامهٔ سرویس</string>
+    <string name="services_nothing_due">هیچ سرویسی عقب نیفتاده و نزدیک به موعد هم نیست</string>
+    <string name="services_no_history">هنوز سرویسی ثبت نشده است</string>
+    <string name="services_no_plans">هنوز برنامهٔ سرویسی تعریف نشده است</string>
+    <string name="services_no_plans_expert">هنوز برنامهٔ سرویسی تعریف نشده است. از ⋮ ← «افزودن برنامه‌های پیش‌فرض» یک فهرست رایج اضافه کنید (قابل ویرایش)، یا در تب برنامه‌ها دستی بسازید.</string>
+    <string name="services_add_defaults">افزودن برنامه‌های پیش‌فرض</string>
+    <string name="service_state_overdue">عقب افتاده</string>
+    <string name="service_state_soon">نزدیک به موعد</string>
+    <string name="service_state_ok">به‌موقع</string>
+    <string name="service_state_never">سابقه ثبت نشده</string>
+    <string name="service_state_unknown">نامشخص (کارکرد ثبت نشده)</string>
+    <string name="service_last">آخرین: %1$s</string>
+    <string name="service_never_done">هنوز سرویسی ثبت نشده — اولین را ثبت کنید تا موعد بعدی حساب شود</string>
+    <string name="service_never_done_short">ثبت نشده</string>
+    <string name="service_meter_left">%1$d %2$s مانده</string>
+    <string name="service_meter_over">%1$d %2$s گذشته</string>
+    <string name="service_days_left">%1$d روز مانده</string>
+    <string name="service_days_over">%1$d روز گذشته</string>
+    <string name="service_every_meter">هر %1$d %2$s</string>
+    <string name="service_every_days">هر %1$d روز</string>
+    <string name="or_word"> یا </string>
+    <string name="service_plan_add">برنامهٔ سرویس جدید</string>
+    <string name="service_plan_edit">ویرایش برنامهٔ سرویس</string>
+    <string name="service_plan_delete_confirm">این برنامهٔ سرویس حذف شود؟ سرویس‌هایی که قبلاً ثبت شده‌اند در سابقه می‌مانند.</string>
+    <string name="service_plan_need_interval">حداقل یکی از دو فاصله را وارد کنید</string>
+    <string name="service_plan_interval_hint">هر کدام زودتر برسد، سرویس سررسیده می‌شود. فاصلهٔ کارکرد به واحد خودِ هر ماشین است: کیلومتر برای ماشین‌های کیلومتری، ساعت برای پمپ و لودر.</string>
+    <string name="service_log_add">ثبت سرویس</string>
+    <string name="service_log_choose_plans">کدام سرویس‌ها انجام شد؟</string>
+    <string name="service_log_choose_at_least_one">حداقل یک سرویس را انتخاب کنید</string>
+    <string name="service_log_no_plans_for_vehicle">برای دستهٔ این ماشین برنامهٔ سرویسی تعریف نشده است</string>
+    <string name="service_log_delete_confirm">این سرویس ثبت‌شده حذف شود؟ موعد بعدی دوباره از سرویس قبلی حساب می‌شود.</string>
+    <string name="field_service_name">نام سرویس (مثلاً روغن موتور)</string>
+    <string name="field_interval_meter">هر چند کیلومتر/ساعت (اختیاری)</string>
+    <string name="field_interval_days">هر چند روز (اختیاری)</string>
+    <string name="field_service_date">تاریخ انجام</string>
+    <string name="field_meter_unit_optional">%1$s (اختیاری)</string>
+    <string name="summary_services">🔧 %1$d سرویس عقب افتاده، %2$d نزدیک به موعد</string>
+    <string name="settings_daily_alerts">اعلان روزانه (سرویس، مدارک و سوخت)</string>
+    <string name="notify_channel_name">یادآوری روزانهٔ ناوگان</string>
+    <string name="notify_title">ناوگان: موارد نیازمند پیگیری</string>
+
     <string-array name="license_types">
         <item>پایه یکم</item>
         <item>پایه دوم</item>

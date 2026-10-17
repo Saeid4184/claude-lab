@@ -9,6 +9,7 @@
         android:maxSdkVersion="28" />
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".FactoryApp"
@@ -125,6 +126,21 @@
 
         <activity
             android:name=".ui.expenses.ExpenseNoteFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.services.ServicesActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.services.ServicePlanFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.services.ServiceLogFormActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 

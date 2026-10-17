@@ -19,6 +19,9 @@ import ir.sobhanbeton.fleet.data.FuelStats
 import ir.sobhanbeton.fleet.data.InspectionEntity
 import ir.sobhanbeton.fleet.data.InspectionStats
 import ir.sobhanbeton.fleet.data.PartStatus
+import ir.sobhanbeton.fleet.data.ServiceLogEntity
+import ir.sobhanbeton.fleet.data.ServicePlanEntity
+import ir.sobhanbeton.fleet.data.ServiceSchedule
 import ir.sobhanbeton.fleet.data.WorkOrderEntity
 import ir.sobhanbeton.fleet.data.WorkOrderStatus
 import ir.sobhanbeton.fleet.data.MeterType
@@ -37,13 +40,14 @@ import ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity
 import ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrderDetailActivity
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrderFormActivity
+import ir.sobhanbeton.fleet.ui.services.ServiceLogFormActivity
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 /** "شناسنامهٔ ماشین": everything known about one vehicle, its driver history, and (expert
  *  only) the actions to change driver/status, edit or delete it. Later phases add its fuel,
- *  service history here; fuel, repairs and inspections are shown already. */
+ *  work and incidents here; fuel, services, repairs and inspections are shown already. */
 class VehicleDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFleetDetailBinding
@@ -56,6 +60,8 @@ class VehicleDetailActivity : AppCompatActivity() {
     private var fuel: List<FuelLogEntity> = emptyList()
     private var repairs: List<WorkOrderEntity> = emptyList()
     private var inspections: List<InspectionEntity> = emptyList()
+    private var plans: List<ServicePlanEntity> = emptyList()
+    private var serviceLogs: List<ServiceLogEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,6 +107,14 @@ class VehicleDetailActivity : AppCompatActivity() {
             inspections = list
             render()
         }
+        repository.servicePlans().observe(this) { list ->
+            plans = list
+            render()
+        }
+        repository.serviceLogs().observe(this) { list ->
+            serviceLogs = list
+            render()
+        }
     }
 
     private fun render() {
@@ -143,6 +157,7 @@ class VehicleDetailActivity : AppCompatActivity() {
         expiryRow(getString(R.string.field_technical_expiry), v.technicalInspectionExpiry)
 
         renderFuel(meterType)
+        renderServices(v)
         renderRepairs()
         renderInspection()
 
@@ -199,6 +214,33 @@ class VehicleDetailActivity : AppCompatActivity() {
                 FleetFormat.date(log.timestamp),
                 detail,
                 onClick = if (Session.canEdit()) ({ FuelFormActivity.start(this, fuelId = log.id) }) else null
+            )
+        }
+    }
+
+    /** Each periodic service that applies to this vehicle's category, with its due state. */
+    private fun renderServices(v: VehicleEntity) {
+        val items = plans.filter { it.category == v.category }.map { ServiceSchedule.status(v, it, serviceLogs) }
+        if (items.isEmpty()) return
+        sections.section(getString(R.string.home_services))
+        val unit = v.meterTypeEnum().unit
+        items.sortedBy { it.state.ordinal }.forEach { item ->
+            val text = when (item.state) {
+                ServiceSchedule.State.NEVER_DONE -> getString(R.string.service_never_done)
+                else -> listOfNotNull(
+                    item.last?.let { getString(R.string.service_last, FleetFormat.date(it.doneAt)) },
+                    item.meterLeft?.let { if (it < 0) getString(R.string.service_meter_over, -it, unit) else getString(R.string.service_meter_left, it, unit) },
+                    item.daysLeft?.let { if (it < 0) getString(R.string.service_days_over, -it) else getString(R.string.service_days_left, it) }
+                ).joinToString(" · ")
+            }.toPersianDigitsInString()
+            val color = when (item.state) {
+                ServiceSchedule.State.OVERDUE -> R.color.danger_red
+                ServiceSchedule.State.DUE_SOON -> R.color.safety_amber
+                else -> null
+            }
+            sections.row(
+                item.plan.name, text, color,
+                onClick = if (Session.canEdit()) ({ ServiceLogFormActivity.start(this, v.id, item.plan.id) }) else null
             )
         }
     }
@@ -317,6 +359,7 @@ class VehicleDetailActivity : AppCompatActivity() {
             menu.add(Menu.NONE, MENU_ADD_FUEL, Menu.NONE, R.string.fuel_add)
             menu.add(Menu.NONE, MENU_ADD_REPAIR, Menu.NONE, R.string.work_order_add)
             menu.add(Menu.NONE, MENU_INSPECT, Menu.NONE, R.string.inspection_submit)
+            menu.add(Menu.NONE, MENU_SERVICE, Menu.NONE, R.string.service_log_add)
             menu.add(Menu.NONE, MENU_EDIT, Menu.NONE, R.string.action_edit)
             menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
         }
@@ -334,6 +377,10 @@ class VehicleDetailActivity : AppCompatActivity() {
         }
         MENU_INSPECT -> {
             InspectionFormActivity.start(this, vehicleId)
+            true
+        }
+        MENU_SERVICE -> {
+            ServiceLogFormActivity.start(this, vehicleId)
             true
         }
         MENU_EDIT -> {
@@ -360,6 +407,7 @@ class VehicleDetailActivity : AppCompatActivity() {
         private const val RECENT_REPAIR_ROWS = 3
         private const val MENU_ADD_REPAIR = 4
         private const val MENU_INSPECT = 5
+        private const val MENU_SERVICE = 6
 
         fun start(context: Context, vehicleId: String) {
             context.startActivity(Intent(context, VehicleDetailActivity::class.java).putExtra(EXTRA_ID, vehicleId))

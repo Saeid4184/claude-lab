@@ -62,9 +62,21 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate3To4_addsServiceTables() {
+        helper.createDatabase(DB, 3).use { db ->
+            db.execSQL("INSERT INTO work_orders (id, vehicleId, vehiclePlate, category, reportedAt, title, severity, location, status, createdAt, updatedAt) " +
+                "VALUES ('w1', 'v1', '12345', 'MIXER', 1, 'x', 'STOPPING', 'INTERNAL', 'OPEN', 1, 1)")
+        }
+        helper.runMigrationsAndValidate(DB, 4, true, MIGRATION_3_4).use { db ->
+            db.query("SELECT COUNT(*) FROM work_orders").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
+            db.execSQL("INSERT INTO service_logs (id, vehicleId, vehiclePlate, planId, planName, doneAt, createdAt) VALUES ('s1', 'v1', '1', 'p', 'روغن', 1, 1)")
+        }
+    }
+
+    @Test
     fun allMigrationsReachLatestVersion() {
         helper.createDatabase(DB, 1).close()
-        helper.runMigrationsAndValidate(DB, 3, true, *ALL_MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB, 4, true, *ALL_MIGRATIONS).close()
     }
 
     private companion object {

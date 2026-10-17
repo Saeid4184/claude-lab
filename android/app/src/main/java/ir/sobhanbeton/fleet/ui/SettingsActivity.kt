@@ -13,6 +13,7 @@ import ir.sobhanbeton.fleet.data.Session
 import ir.sobhanbeton.fleet.data.UserProfile
 import ir.sobhanbeton.fleet.data.UserRole
 import ir.sobhanbeton.fleet.databinding.ActivitySettingsBinding
+import ir.sobhanbeton.fleet.notify.DailyAlertsWorker
 import ir.sobhanbeton.fleet.util.AnimUtils
 import ir.sobhanbeton.fleet.util.AppPreferences
 import kotlinx.coroutines.launch
@@ -43,6 +44,12 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.switchHaptic.setOnCheckedChangeListener { _, checked ->
             AppPreferences.setHapticEnabled(this, checked)
+        }
+
+        binding.switchDailyAlerts.isChecked = AppPreferences.isDailyAlertsEnabled(this)
+        binding.switchDailyAlerts.setOnCheckedChangeListener { _, checked ->
+            AppPreferences.setDailyAlertsEnabled(this, checked)
+            if (checked) DailyAlertsWorker.schedule(this) else DailyAlertsWorker.cancel(this)
         }
 
         binding.radioGroupTheme.setOnCheckedChangeListener { _, checkedId ->

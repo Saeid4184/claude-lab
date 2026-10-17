@@ -143,6 +143,18 @@
                 android:visibility="gone"
                 tools:text="⛽ مصرف سوخت ۱ ماشین غیرعادی بالا رفته"
                 tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvServiceAlert"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dim_4"
+                android:gravity="center"
+                android:textColor="@color/safety_amber"
+                android:textSize="@dimen/text_size_13"
+                android:visibility="gone"
+                tools:text="🔧 ۲ سرویس عقب افتاده، ۳ نزدیک به موعد"
+                tools:visibility="visible" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
