@@ -82,6 +82,33 @@ class ScreensSmokeTest {
     @Test fun dailyWorkForm() { open(ir.sobhanbeton.fleet.ui.work.DailyWorkFormActivity::class.java) }
     @Test fun incidents() { open(ir.sobhanbeton.fleet.ui.incidents.IncidentsActivity::class.java) }
     @Test fun incidentForm() { open(ir.sobhanbeton.fleet.ui.incidents.IncidentFormActivity::class.java) }
+    @Test fun reports() { open(ir.sobhanbeton.fleet.ui.reports.ReportsActivity::class.java) }
+    @Test fun heatmap() { open(ir.sobhanbeton.fleet.ui.reports.DefectHeatmapActivity::class.java) }
+
+    @Test
+    fun reportsRenderWithData() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val db = ir.sobhanbeton.fleet.data.AppDatabase.getInstance(ctx)
+        val now = System.currentTimeMillis()
+        kotlinx.coroutines.runBlocking {
+            db.vehicleDao().upsert(ir.sobhanbeton.fleet.data.VehicleEntity(id = "r1", plate = "12345", category = "MIXER", status = "IN_REPAIR"))
+            db.workOrderDao().upsert(ir.sobhanbeton.fleet.data.WorkOrderEntity(id = "o1", vehicleId = "r1", vehiclePlate = "12345", reportedAt = now - 3_600_000L, title = "x", severity = "STOPPING"))
+            db.dailyWorkDao().upsert(ir.sobhanbeton.fleet.data.DailyWorkEntity(id = "r1_1", vehicleId = "r1", vehiclePlate = "12345", category = "MIXER", date = now, dayKey = ir.sobhanbeton.fleet.data.DailyWorkStats.dayKey(now), trips = 5, concreteM3 = 40.0, driverId = "d", driverName = "راننده"))
+            db.incidentDao().upsert(ir.sobhanbeton.fleet.data.IncidentEntity(id = "i1", occurredAt = now, vehicleId = "r1", subject = "واژگونی", summaryText = "s"))
+        }
+        val activity = open(ir.sobhanbeton.fleet.ui.reports.ReportsActivity::class.java)
+        val container = activity.findViewById<android.widget.LinearLayout>(R.id.container)
+        repeat(100) { if (container.childCount == 0) { Thread.sleep(20); org.robolectric.shadows.ShadowLooper.idleMainLooper() } }
+        assertTrue("dashboard sections rendered", container.childCount > 10)
+    }
+
+    @Test
+    fun managerCanOpenReports() {
+        Session.set(UserProfile(uid = "u2", name = "مدیر", email = "m@x.ir", role = UserRole.MANAGER))
+        val activity = open(ir.sobhanbeton.fleet.ui.reports.ReportsActivity::class.java)
+        assertFalse(activity.isFinishing)
+    }
+
     @Test fun expenseNotes() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity::class.java) }
     @Test fun expenseNoteForm() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNoteFormActivity::class.java) }
 

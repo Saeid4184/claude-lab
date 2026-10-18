@@ -30,6 +30,7 @@ import ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity
 import ir.sobhanbeton.fleet.ui.inspections.InspectionsActivity
 import ir.sobhanbeton.fleet.notify.DailyAlertsWorker
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity
+import ir.sobhanbeton.fleet.ui.reports.ReportsActivity
 import ir.sobhanbeton.fleet.ui.incidents.IncidentsActivity
 import ir.sobhanbeton.fleet.ui.services.ServicesActivity
 import ir.sobhanbeton.fleet.ui.work.DailyWorkActivity
@@ -44,9 +45,9 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
-/** Home screen: a menu of the fleet-management sections (vehicles, drivers, fuel, repairs,
- *  periodic service, daily work, incidents, reports). Sections not built yet are listed with
- *  the roadmap phase they arrive in. */
+/** Home screen: the fleet summary card and the menu of sections (vehicles, drivers, fuel,
+ *  inspections, repairs, periodic service, daily work, incidents, reports, and — for the expert
+ *  only — the private expense notes). */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -83,15 +84,6 @@ class MainActivity : AppCompatActivity() {
 
         binding.rvHomeMenu.layoutManager = LinearLayoutManager(this)
         binding.rvHomeMenu.adapter = HomeMenuAdapter(homeMenuItems) { item ->
-            val phase = item.comingInPhase
-            if (phase != null) {
-                Toast.makeText(
-                    this,
-                    getString(R.string.home_coming_in_phase, phase.toPersianDigits(minWidth = 1)),
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@HomeMenuAdapter
-            }
             when (item.destination) {
                 HomeDestination.VEHICLES -> startActivity(Intent(this, VehiclesActivity::class.java))
                 HomeDestination.DRIVERS -> startActivity(Intent(this, DriversActivity::class.java))
@@ -101,8 +93,8 @@ class MainActivity : AppCompatActivity() {
                 HomeDestination.SERVICES -> startActivity(Intent(this, ServicesActivity::class.java))
                 HomeDestination.DAILY_WORK -> startActivity(Intent(this, DailyWorkActivity::class.java))
                 HomeDestination.INCIDENTS -> startActivity(Intent(this, IncidentsActivity::class.java))
+                HomeDestination.REPORTS -> startActivity(Intent(this, ReportsActivity::class.java))
                 HomeDestination.EXPENSES -> startActivity(Intent(this, ExpenseNotesActivity::class.java))
-                else -> Unit
             }
         }
         AnimUtils.runLayoutAnimation(binding.rvHomeMenu)
@@ -232,8 +224,7 @@ class MainActivity : AppCompatActivity() {
         ),
         HomeMenuItem(
             HomeDestination.REPORTS, R.string.home_reports, R.string.home_subtitle_reports,
-            R.drawable.ic_dashboard, R.color.accent_machinery, R.color.accent_machinery_bg,
-            comingInPhase = 6
+            R.drawable.ic_dashboard, R.color.accent_machinery, R.color.accent_machinery_bg
         ),
         // Private: only the expert sees (and can open) the expense notebook.
         HomeMenuItem(

@@ -45,7 +45,6 @@
     <string name="firebase_missing_message">این نسخه بدون فایل google-services.json ساخته شده است، بنابراین ورود و همگام‌سازی کار نمی‌کند. طبق راهنمای FIREBASE_SETUP.md پروژهٔ Firebase را بسازید، فایل را در پوشهٔ android/app قرار دهید و دوباره APK بسازید.</string>
     <string name="login_pending_title">حساب در انتظار تأیید</string>
     <string name="login_pending_message">حساب شما ساخته شد اما هنوز توسط کارشناس ماشین‌آلات تأیید نشده است. بعد از تأیید، با همین ایمیل و رمز دوباره وارد شوید.</string>
-    <string name="home_coming_in_phase">به‌زودی — فاز %1$s</string>
     <string name="home_vehicles">ماشین‌آلات</string>
     <string name="home_subtitle_vehicles">شناسنامه، وضعیت و مدارک هر ماشین</string>
     <string name="home_drivers">رانندگان</string>
@@ -388,6 +387,43 @@
     <string name="field_incident_location">محل (اختیاری)</string>
     <string name="field_incident_action">اقدام انجام‌شده</string>
     <string name="field_incident_description">توضیحات (اختیاری)</string>
+
+
+    <!-- Phase 6: dashboard, monthly report, heatmap -->
+    <string name="report_export_monthly">گزارش ماهانه (اکسل)</string>
+    <string name="report_ai_analysis">تحلیل هوش مصنوعی</string>
+    <string name="report_period">بازه: %1$s تا %2$s</string>
+    <string name="report_this_month">این ماه</string>
+    <string name="report_last_month">ماه قبل</string>
+    <string name="report_availability">آماده‌به‌کاری ناوگان</string>
+    <string name="report_vehicles_in_service">ماشین‌های در سرویس</string>
+    <string name="report_stopped_now">متوقف در تعمیر (الان)</string>
+    <string name="report_section_work">کارکرد</string>
+    <string name="report_mixer_work">میکسرها</string>
+    <string name="report_mixer_work_value">%1$d سرویس · %2$s م³</string>
+    <string name="report_pump_work">بتن پمپاژشده</string>
+    <string name="report_dump_work">کمپرسی‌ها</string>
+    <string name="report_dump_work_value">%1$d سرویس معدن · %2$d سرویس نخاله</string>
+    <string name="report_other_work">سرویس لودر و تدارکات</string>
+    <string name="report_top_driver">رتبهٔ %1$d رانندگان</string>
+    <string name="report_section_repairs">خرابی و توقف</string>
+    <string name="report_repairs_opened">خرابی‌های جدید</string>
+    <string name="report_repairs_closed">تعمیرات تمام‌شده</string>
+    <string name="report_repairs_open_now">تعمیرات باز (الان)</string>
+    <string name="report_downtime_value">%1$d ساعت توقف · %2$s٪ آماده</string>
+    <string name="report_fuel_total">جمع سوخت</string>
+    <string name="report_fuel_anomalies">ماشین‌های با مصرف غیرعادی</string>
+    <string name="report_section_upkeep">نگهداری</string>
+    <string name="report_services_done">سرویس‌های انجام‌شده</string>
+    <string name="report_services_overdue">سرویس‌های عقب‌افتاده (الان)</string>
+    <string name="report_services_soon">سرویس‌های نزدیک به موعد</string>
+    <string name="report_documents">مدارک منقضی یا تا ۳۰ روز</string>
+    <string name="report_inspections">بازدیدهای هفتگی ثبت‌شده</string>
+    <string name="report_open_defects">ایرادهای باز (الان)</string>
+    <string name="report_defect_times">%1$d بار در بازدیدها</string>
+    <string name="heatmap_title">نقشهٔ حرارتی ایرادها</string>
+    <string name="heatmap_summary">%1$s تا %2$s — %3$d بازدید</string>
+    <string name="heatmap_empty">در این بازه برای این دسته بازدیدی ثبت نشده است</string>
 
     <string-array name="license_types">
         <item>پایه یکم</item>

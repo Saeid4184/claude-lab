@@ -5,13 +5,11 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import ir.sobhanbeton.fleet.R
 import ir.sobhanbeton.fleet.databinding.ItemHomeMenuBinding
 import ir.sobhanbeton.fleet.util.AnimUtils
 import ir.sobhanbeton.fleet.util.GlassCard
-import ir.sobhanbeton.fleet.util.toPersianDigits
 
-/** The sections reachable from the home menu, in roadmap order. */
+/** The sections reachable from the home menu. */
 enum class HomeDestination {
     VEHICLES, DRIVERS, FUEL, INSPECTIONS, REPAIRS, SERVICES, DAILY_WORK, INCIDENTS, REPORTS, EXPENSES
 }
@@ -22,11 +20,7 @@ data class HomeMenuItem(
     val subtitleRes: Int,
     val iconRes: Int,
     val accentColorRes: Int,
-    val accentBgColorRes: Int,
-    /** Roadmap phase this section ships in, while it's still unbuilt — the card is shown
-     *  dimmed with a "coming in phase N" note so the menu already reflects the full plan.
-     *  Null once the section exists. */
-    val comingInPhase: Int? = null
+    val accentBgColorRes: Int
 )
 
 /** Simple single-column list of tappable cards — the home screen's "menu". */
@@ -48,10 +42,7 @@ class HomeMenuAdapter(
         fun bind(item: HomeMenuItem, onClick: (HomeMenuItem) -> Unit) {
             val context = binding.root.context
             binding.tvTitle.setText(item.titleRes)
-            binding.tvSubtitle.text = item.comingInPhase?.let { phase ->
-                context.getString(R.string.home_coming_in_phase, phase.toPersianDigits(minWidth = 1))
-            } ?: context.getString(item.subtitleRes)
-            binding.cardRoot.alpha = if (item.comingInPhase != null) 0.55f else 1f
+            binding.tvSubtitle.setText(item.subtitleRes)
             binding.ivIcon.setImageResource(item.iconRes)
 
             val accent = ContextCompat.getColor(context, item.accentColorRes)

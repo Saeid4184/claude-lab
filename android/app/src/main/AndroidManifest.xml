@@ -164,6 +164,15 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".ui.reports.ReportsActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.reports.DefectHeatmapActivity"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
