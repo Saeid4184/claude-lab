@@ -39,4 +39,12 @@ class DailyAlertsTest {
         assertEquals(1, c.documentsExpiringSoon)
         assertEquals(3, DailyAlerts.lines(c).size)
     }
+
+    @Test
+    fun `low tank stock is reported`() {
+        val c = DailyAlerts.count(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), now, tankStock = 1_500.0, tankLowLevel = 2_000.0)
+        assertEquals(1_500.0, c.tankLowStock!!, 0.001)
+        assertEquals(1, DailyAlerts.lines(c).size)
+        assertTrue(DailyAlerts.count(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), now, tankStock = 5_000.0, tankLowLevel = 2_000.0).isEmpty)
+    }
 }

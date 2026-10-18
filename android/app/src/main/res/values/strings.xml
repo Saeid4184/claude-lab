@@ -425,6 +425,47 @@
     <string name="heatmap_summary">%1$s تا %2$s — %3$d بازدید</string>
     <string name="heatmap_empty">در این بازه برای این دسته بازدیدی ثبت نشده است</string>
 
+
+    <!-- Phase 7: diesel tank -->
+    <string name="home_tank">مخزن گازوئیل</string>
+    <string name="home_subtitle_tank">موجودی، ورود تانکر، اندازه‌گیری و مغایرت</string>
+    <string name="tank_tab_movements">گردش مخزن</string>
+    <string name="tank_tab_readings">اندازه‌گیری‌ها و مغایرت</string>
+    <string name="tank_add">ثبت در مخزن</string>
+    <string name="tank_add_delivery">ورود تانکر</string>
+    <string name="tank_add_vehicle_fuel">سوخت‌گیری ماشین (از مخزن)</string>
+    <string name="tank_add_withdrawal">برداشت متفرقه (ژنراتور و …)</string>
+    <string name="tank_add_reading">ثبت اندازه‌گیری موجودی</string>
+    <string name="tank_delete_confirm">این مورد از گردش مخزن حذف شود؟</string>
+    <string name="tank_no_reading">موجودی نامشخص</string>
+    <string name="tank_no_reading_hint">اول موجودی فعلی مخزن را اندازه بگیرید و با «ثبت اندازه‌گیری موجودی» وارد کنید؛ از آن به بعد موجودی خودکار حساب می‌شود.</string>
+    <string name="tank_stock_value">%1$s از %2$s لیتر</string>
+    <string name="tank_stock_detail">آخرین اندازه‌گیری %1$s: %2$s لیتر — از آن زمان ورود %3$s، برداشت %4$s لیتر</string>
+    <string name="tank_low_warning">⚠ موجودی زیر حد هشدار (%1$s لیتر) است</string>
+    <string name="tank_stock_helper">موجودی مخزن: %1$s از %2$s لیتر</string>
+    <string name="tank_kind_delivery">ورود تانکر</string>
+    <string name="tank_kind_vehicle">سوخت ماشین</string>
+    <string name="tank_kind_other">برداشت متفرقه</string>
+    <string name="tank_kind_reading">اندازه‌گیری</string>
+    <string name="tank_expected">طبق ثبت‌ها: %1$s</string>
+    <string name="tank_first_reading">اولین</string>
+    <string name="tank_empty">هنوز گردشی برای مخزن ثبت نشده است</string>
+    <string name="tank_priority_note">اولویت برداشت: لودر ← پمپ ← کمپرسی تریلی ← کمپرسی ← میکسر (میکسر فقط با تأیید مدیر ماشین‌آلات)</string>
+    <string name="tank_settings">تنظیمات مخزن</string>
+    <string name="field_tank_capacity">ظرفیت (لیتر)</string>
+    <string name="field_tank_low_level">حد هشدار موجودی کم (لیتر)</string>
+    <string name="field_tank_reference">شمارهٔ بارنامه / حواله (اختیاری)</string>
+    <string name="field_tank_supplier">تأمین‌کننده (اختیاری)</string>
+    <string name="field_tank_consumer">مصرف‌کننده (مثلاً ژنراتور)</string>
+    <string name="field_tank_measured">موجودی اندازه‌گیری‌شده</string>
+    <string name="field_liters_plain">مقدار</string>
+    <string name="unit_liter">لیتر</string>
+    <string name="fuel_manager_approval">با تأیید مدیر ماشین‌آلات</string>
+    <string name="fuel_manager_approval_required">برداشت از مخزن برای این ماشین فقط با تأیید مدیر ماشین‌آلات مجاز است</string>
+    <string name="fuel_tank_low_priority">⚠ موجودی مخزن کم است؛ اولویت با لودر و پمپ‌هاست</string>
+    <string name="summary_tank">🛢 موجودی مخزن: %1$s لیتر</string>
+    <string name="summary_tank_low">🛢 موجودی مخزن کم است: %1$s لیتر</string>
+
     <string-array name="license_types">
         <item>پایه یکم</item>
         <item>پایه دوم</item>

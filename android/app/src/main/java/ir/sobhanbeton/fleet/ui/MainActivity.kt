@@ -22,6 +22,11 @@ import ir.sobhanbeton.fleet.data.ServiceLogEntity
 import ir.sobhanbeton.fleet.data.ServicePlanEntity
 import ir.sobhanbeton.fleet.data.ServiceSchedule
 import ir.sobhanbeton.fleet.data.Session
+import ir.sobhanbeton.fleet.data.TankConfigEntity
+import ir.sobhanbeton.fleet.data.TankDeliveryEntity
+import ir.sobhanbeton.fleet.data.TankReadingEntity
+import ir.sobhanbeton.fleet.data.TankStock
+import ir.sobhanbeton.fleet.data.TankWithdrawalEntity
 import ir.sobhanbeton.fleet.data.VehicleEntity
 import ir.sobhanbeton.fleet.data.VehicleStatus
 import ir.sobhanbeton.fleet.databinding.ActivityMainBinding
@@ -32,7 +37,9 @@ import ir.sobhanbeton.fleet.notify.DailyAlertsWorker
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity
 import ir.sobhanbeton.fleet.ui.reports.ReportsActivity
 import ir.sobhanbeton.fleet.ui.incidents.IncidentsActivity
+import ir.sobhanbeton.fleet.ui.common.FleetFormat
 import ir.sobhanbeton.fleet.ui.services.ServicesActivity
+import ir.sobhanbeton.fleet.ui.tank.TankActivity
 import ir.sobhanbeton.fleet.ui.work.DailyWorkActivity
 import ir.sobhanbeton.fleet.util.AppPreferences
 import ir.sobhanbeton.fleet.ui.fuel.FuelActivity
@@ -88,6 +95,7 @@ class MainActivity : AppCompatActivity() {
                 HomeDestination.VEHICLES -> startActivity(Intent(this, VehiclesActivity::class.java))
                 HomeDestination.DRIVERS -> startActivity(Intent(this, DriversActivity::class.java))
                 HomeDestination.FUEL -> startActivity(Intent(this, FuelActivity::class.java))
+                HomeDestination.TANK -> startActivity(Intent(this, TankActivity::class.java))
                 HomeDestination.INSPECTIONS -> startActivity(Intent(this, InspectionsActivity::class.java))
                 HomeDestination.REPAIRS -> startActivity(Intent(this, WorkOrdersActivity::class.java))
                 HomeDestination.SERVICES -> startActivity(Intent(this, ServicesActivity::class.java))
@@ -150,6 +158,30 @@ class MainActivity : AppCompatActivity() {
         repository.drivers().observe(this) { drivers = it; render() }
         observeFuelAlerts()
         observeServiceAlerts()
+        observeTank()
+    }
+
+    /** Tank stock on the card; amber below the warning level (tap → tank). */
+    private fun observeTank() {
+        var config = TankConfigEntity()
+        var deliveries: List<TankDeliveryEntity> = emptyList()
+        var withdrawals: List<TankWithdrawalEntity> = emptyList()
+        var readings: List<TankReadingEntity> = emptyList()
+        var tankFuel: List<FuelLogEntity> = emptyList()
+        fun render() {
+            val stock = TankStock.status(deliveries, withdrawals, readings, tankFuel).stock
+            binding.tvTankStatus.visibility = if (stock == null) android.view.View.GONE else android.view.View.VISIBLE
+            if (stock == null) return
+            val low = stock < config.lowLevelLiters
+            binding.tvTankStatus.text = getString(if (low) R.string.summary_tank_low else R.string.summary_tank, FleetFormat.decimal(stock)).toPersianDigitsInString()
+            binding.tvTankStatus.setTextColor(ContextCompat.getColor(this, if (low) R.color.safety_amber else R.color.concrete_700))
+        }
+        repository.tankConfig().observe(this) { config = it ?: TankConfigEntity(); render() }
+        repository.tankDeliveries().observe(this) { deliveries = it; render() }
+        repository.tankWithdrawals().observe(this) { withdrawals = it; render() }
+        repository.tankReadings().observe(this) { readings = it; render() }
+        repository.tankFuel().observe(this) { tankFuel = it; render() }
+        binding.tvTankStatus.setOnClickListener { startActivity(Intent(this, TankActivity::class.java)) }
     }
 
     /** "N services overdue/due soon" line on the card (tap → services). */
@@ -201,6 +233,10 @@ class MainActivity : AppCompatActivity() {
         HomeMenuItem(
             HomeDestination.FUEL, R.string.home_fuel, R.string.home_subtitle_fuel,
             R.drawable.ic_inventory, R.color.accent_item_log, R.color.accent_item_log_bg
+        ),
+        HomeMenuItem(
+            HomeDestination.TANK, R.string.home_tank, R.string.home_subtitle_tank,
+            R.drawable.ic_inventory, R.color.accent_machinery, R.color.accent_machinery_bg
         ),
         HomeMenuItem(
             HomeDestination.INSPECTIONS, R.string.home_inspections, R.string.home_subtitle_inspections,

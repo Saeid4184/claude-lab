@@ -42,6 +42,9 @@ data class FuelLogEntity(
     val meterReading: Long? = null,
     val source: String = FuelSource.INTERNAL_TANK.name,
     val notes: String? = null,
+    /** Tank fuel for a vehicle that needs it (see [TankStock.needsManagerApproval]) was given
+     *  with the machinery manager's approval. Null when not applicable. */
+    val managerApproved: Boolean? = null,
     val performedByName: String? = null,
     val createdAt: Long = 0L
 ) {

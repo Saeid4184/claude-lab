@@ -11,7 +11,7 @@ import ir.sobhanbeton.fleet.util.GlassCard
 
 /** The sections reachable from the home menu. */
 enum class HomeDestination {
-    VEHICLES, DRIVERS, FUEL, INSPECTIONS, REPAIRS, SERVICES, DAILY_WORK, INCIDENTS, REPORTS, EXPENSES
+    VEHICLES, DRIVERS, FUEL, TANK, INSPECTIONS, REPAIRS, SERVICES, DAILY_WORK, INCIDENTS, REPORTS, EXPENSES
 }
 
 data class HomeMenuItem(

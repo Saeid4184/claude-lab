@@ -109,6 +109,40 @@ class ScreensSmokeTest {
         assertFalse(activity.isFinishing)
     }
 
+    @Test fun tank() { open(ir.sobhanbeton.fleet.ui.tank.TankActivity::class.java) }
+
+    @Test
+    fun tankEntryFormEveryMode() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        for (mode in ir.sobhanbeton.fleet.ui.tank.TankEntryFormActivity.Mode.values()) {
+            open(
+                ir.sobhanbeton.fleet.ui.tank.TankEntryFormActivity::class.java,
+                Intent(ctx, ir.sobhanbeton.fleet.ui.tank.TankEntryFormActivity::class.java).putExtra("mode", mode.name)
+            )
+        }
+    }
+
+    @Test
+    fun fuelFormAsksManagerApprovalForMixerFromTank() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val dao = ir.sobhanbeton.fleet.data.AppDatabase.getInstance(ctx).vehicleDao()
+        kotlinx.coroutines.runBlocking {
+            dao.upsert(ir.sobhanbeton.fleet.data.VehicleEntity(id = "mx", plate = "12345", category = "MIXER"))
+            dao.upsert(ir.sobhanbeton.fleet.data.VehicleEntity(id = "ld", plate = "23456", category = "LOADER"))
+        }
+        fun approvalShownFor(vehicleId: String): Boolean {
+            val activity = open(
+                ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity::class.java,
+                Intent(ctx, ir.sobhanbeton.fleet.ui.fuel.FuelFormActivity::class.java).putExtra("vehicle_id", vehicleId)
+            )
+            val save = activity.findViewById<TextView>(R.id.btnSave)
+            repeat(50) { if (!save.isEnabled) { Thread.sleep(20); org.robolectric.shadows.ShadowLooper.idleMainLooper() } }
+            return activity.findViewById<android.view.View>(R.id.cbManagerApproval).visibility == android.view.View.VISIBLE
+        }
+        assertTrue("mixer from tank needs approval", approvalShownFor("mx"))
+        assertFalse("loader has priority", approvalShownFor("ld"))
+    }
+
     @Test fun expenseNotes() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNotesActivity::class.java) }
     @Test fun expenseNoteForm() { open(ir.sobhanbeton.fleet.ui.expenses.ExpenseNoteFormActivity::class.java) }
 

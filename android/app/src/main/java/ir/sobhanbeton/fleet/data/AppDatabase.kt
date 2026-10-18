@@ -20,9 +20,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         VehicleEntity::class, DriverEntity::class, AssignmentEntity::class, FuelLogEntity::class,
         InspectionEntity::class, WorkOrderEntity::class, ExpenseNoteEntity::class,
-        ServicePlanEntity::class, ServiceLogEntity::class, DailyWorkEntity::class, IncidentEntity::class
+        ServicePlanEntity::class, ServiceLogEntity::class, DailyWorkEntity::class, IncidentEntity::class,
+        TankConfigEntity::class, TankDeliveryEntity::class, TankWithdrawalEntity::class, TankReadingEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun serviceLogDao(): ServiceLogDao
     abstract fun dailyWorkDao(): DailyWorkDao
     abstract fun incidentDao(): IncidentDao
+    abstract fun tankDao(): TankDao
 
     companion object {
         @Volatile
@@ -171,4 +173,30 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+/** v5 → v6 (phase 7): diesel tank tables, and fuel_logs.managerApproved. */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `fuel_logs` ADD COLUMN `managerApproved` INTEGER")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `tank_config` (`id` TEXT NOT NULL, `capacityLiters` REAL NOT NULL, " +
+                "`lowLevelLiters` REAL NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `tank_deliveries` (`id` TEXT NOT NULL, `date` INTEGER NOT NULL, `liters` REAL NOT NULL, " +
+                "`reference` TEXT, `supplier` TEXT, `notes` TEXT, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_tank_deliveries_date` ON `tank_deliveries` (`date`)")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `tank_withdrawals` (`id` TEXT NOT NULL, `date` INTEGER NOT NULL, `liters` REAL NOT NULL, " +
+                "`consumer` TEXT NOT NULL, `notes` TEXT, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_tank_withdrawals_date` ON `tank_withdrawals` (`date`)")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `tank_readings` (`id` TEXT NOT NULL, `date` INTEGER NOT NULL, `liters` REAL NOT NULL, " +
+                "`notes` TEXT, `performedByName` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_tank_readings_date` ON `tank_readings` (`date`)")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)

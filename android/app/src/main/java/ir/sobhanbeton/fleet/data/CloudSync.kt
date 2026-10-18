@@ -56,6 +56,18 @@ class CloudSync(private val db: AppDatabase) {
         listeners += mirror(COLLECTION_INCIDENTS,
             upsert = { db.incidentDao().upsert(it.toObject(IncidentEntity::class.java)!!) },
             delete = { db.incidentDao().deleteById(it) })
+        listeners += mirror(COLLECTION_TANK_CONFIG,
+            upsert = { db.tankDao().upsertConfig(it.toObject(TankConfigEntity::class.java)!!) },
+            delete = { db.tankDao().deleteConfig(it) })
+        listeners += mirror(COLLECTION_TANK_DELIVERIES,
+            upsert = { db.tankDao().upsertDelivery(it.toObject(TankDeliveryEntity::class.java)!!) },
+            delete = { db.tankDao().deleteDelivery(it) })
+        listeners += mirror(COLLECTION_TANK_WITHDRAWALS,
+            upsert = { db.tankDao().upsertWithdrawal(it.toObject(TankWithdrawalEntity::class.java)!!) },
+            delete = { db.tankDao().deleteWithdrawal(it) })
+        listeners += mirror(COLLECTION_TANK_READINGS,
+            upsert = { db.tankDao().upsertReading(it.toObject(TankReadingEntity::class.java)!!) },
+            delete = { db.tankDao().deleteReading(it) })
         // Private to the expert: never mirrored onto the manager's phone (rules would refuse
         // the read anyway).
         if (Session.canEdit()) {
@@ -86,6 +98,10 @@ class CloudSync(private val db: AppDatabase) {
             db.serviceLogDao().clear()
             db.dailyWorkDao().clear()
             db.incidentDao().clear()
+            db.tankDao().clearConfig()
+            db.tankDao().clearDeliveries()
+            db.tankDao().clearWithdrawals()
+            db.tankDao().clearReadings()
         }
     }
 
@@ -121,5 +137,9 @@ class CloudSync(private val db: AppDatabase) {
         const val COLLECTION_SERVICE_LOGS = "serviceLogs"
         const val COLLECTION_DAILY_WORK = "dailyWork"
         const val COLLECTION_INCIDENTS = "incidents"
+        const val COLLECTION_TANK_CONFIG = "tankConfig"
+        const val COLLECTION_TANK_DELIVERIES = "tankDeliveries"
+        const val COLLECTION_TANK_WITHDRAWALS = "tankWithdrawals"
+        const val COLLECTION_TANK_READINGS = "tankReadings"
     }
 }

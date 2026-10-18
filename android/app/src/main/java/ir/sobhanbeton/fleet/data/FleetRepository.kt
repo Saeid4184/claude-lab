@@ -40,6 +40,10 @@ class FleetRepository private constructor(context: Context) {
     private val serviceLogsCol = firestore.collection(CloudSync.COLLECTION_SERVICE_LOGS)
     private val dailyWorkCol = firestore.collection(CloudSync.COLLECTION_DAILY_WORK)
     private val incidentsCol = firestore.collection(CloudSync.COLLECTION_INCIDENTS)
+    private val tankConfigCol = firestore.collection(CloudSync.COLLECTION_TANK_CONFIG)
+    private val tankDeliveriesCol = firestore.collection(CloudSync.COLLECTION_TANK_DELIVERIES)
+    private val tankWithdrawalsCol = firestore.collection(CloudSync.COLLECTION_TANK_WITHDRAWALS)
+    private val tankReadingsCol = firestore.collection(CloudSync.COLLECTION_TANK_READINGS)
 
     fun startSync() = cloudSync.start()
 
@@ -271,6 +275,8 @@ class FleetRepository private constructor(context: Context) {
         require(input.liters > 0.0) { "مقدار سوخت را وارد کنید" }
         val vehicle = requireNotNull(db.vehicleDao().getById(input.vehicleId)) { "ماشین را انتخاب کنید" }
         val existing = input.id.takeIf { it.isNotEmpty() }?.let { db.fuelLogDao().getById(it) }
+        val needsApproval = input.sourceEnum() == FuelSource.INTERNAL_TANK && TankStock.needsManagerApproval(vehicle)
+        require(!needsApproval || input.managerApproved == true) { "برداشت از مخزن برای این ماشین فقط با تأیید مدیر ماشین‌آلات مجاز است" }
         val driver = db.assignmentDao().getForVehicleAt(vehicle.id, input.timestamp)
         val now = System.currentTimeMillis()
         val ref = if (existing != null) fuelCol.document(existing.id) else fuelCol.document()
@@ -280,6 +286,7 @@ class FleetRepository private constructor(context: Context) {
             category = vehicle.category,
             driverId = driver?.driverId,
             driverName = driver?.driverName,
+            managerApproved = if (needsApproval) true else null,
             performedByName = existing?.performedByName ?: Session.currentUserOrGuestLabel(),
             createdAt = existing?.createdAt ?: now
         )
@@ -637,6 +644,61 @@ class FleetRepository private constructor(context: Context) {
     suspend fun deleteIncident(id: String): Result<Unit> = writeResult {
         awaitWrite(incidentsCol.document(id).delete())
     }
+
+    // ---------------------------------------------------------------- diesel tank
+
+    fun tankConfig(): LiveData<TankConfigEntity?> = db.tankDao().configLive()
+    fun tankDeliveries(): LiveData<List<TankDeliveryEntity>> = db.tankDao().deliveriesLive()
+    fun tankWithdrawals(): LiveData<List<TankWithdrawalEntity>> = db.tankDao().withdrawalsLive()
+    fun tankReadings(): LiveData<List<TankReadingEntity>> = db.tankDao().readingsLive()
+    fun tankFuel(): LiveData<List<FuelLogEntity>> = db.fuelLogDao().tankFuelLive()
+
+    /** Stored config, or the defaults (12,000 L twin tank) until the expert changes them. */
+    suspend fun tankConfigOnce(): TankConfigEntity = db.tankDao().configOnce() ?: TankConfigEntity()
+
+    suspend fun tankStatusOnce(): TankStock.Status = TankStock.status(
+        db.tankDao().deliveriesOnce(), db.tankDao().withdrawalsOnce(), db.tankDao().readingsOnce(), db.fuelLogDao().tankFuelOnce()
+    )
+
+    suspend fun saveTankConfig(capacity: Double, lowLevel: Double): Result<Unit> = writeResult {
+        require(capacity > 0) { "ظرفیت باید بزرگ‌تر از صفر باشد" }
+        require(lowLevel in 0.0..capacity) { "حد هشدار باید بین صفر و ظرفیت باشد" }
+        awaitWrite(tankConfigCol.document(TankConfigEntity.MAIN_ID).set(TankConfigEntity(TankConfigEntity.MAIN_ID, capacity, lowLevel, System.currentTimeMillis())))
+    }
+
+    suspend fun saveTankDelivery(input: TankDeliveryEntity): Result<String> = writeResult {
+        require(input.liters > 0) { "مقدار را وارد کنید" }
+        val ref = input.id.takeIf { it.isNotEmpty() }?.let { tankDeliveriesCol.document(it) } ?: tankDeliveriesCol.document()
+        val now = System.currentTimeMillis()
+        awaitWrite(ref.set(input.copy(id = ref.id, performedByName = input.performedByName ?: Session.currentUserOrGuestLabel(), createdAt = input.createdAt.takeIf { it > 0 } ?: now)))
+        ref.id
+    }
+
+    suspend fun saveTankWithdrawal(input: TankWithdrawalEntity): Result<String> = writeResult {
+        require(input.liters > 0) { "مقدار را وارد کنید" }
+        require(input.consumer.isNotBlank()) { "مصرف‌کننده را وارد کنید" }
+        val ref = input.id.takeIf { it.isNotEmpty() }?.let { tankWithdrawalsCol.document(it) } ?: tankWithdrawalsCol.document()
+        val now = System.currentTimeMillis()
+        awaitWrite(ref.set(input.copy(id = ref.id, consumer = input.consumer.trim(), performedByName = input.performedByName ?: Session.currentUserOrGuestLabel(), createdAt = input.createdAt.takeIf { it > 0 } ?: now)))
+        ref.id
+    }
+
+    suspend fun saveTankReading(input: TankReadingEntity): Result<String> = writeResult {
+        require(input.liters >= 0) { "مقدار نمی‌تواند منفی باشد" }
+        val capacity = tankConfigOnce().capacityLiters
+        require(input.liters <= capacity) { "مقدار از ظرفیت مخزن بیشتر است" }
+        val ref = input.id.takeIf { it.isNotEmpty() }?.let { tankReadingsCol.document(it) } ?: tankReadingsCol.document()
+        val now = System.currentTimeMillis()
+        awaitWrite(ref.set(input.copy(id = ref.id, performedByName = input.performedByName ?: Session.currentUserOrGuestLabel(), createdAt = input.createdAt.takeIf { it > 0 } ?: now)))
+        ref.id
+    }
+
+    suspend fun deleteTankDelivery(id: String): Result<Unit> = writeResult { awaitWrite(tankDeliveriesCol.document(id).delete()) }
+    suspend fun deleteTankWithdrawal(id: String): Result<Unit> = writeResult { awaitWrite(tankWithdrawalsCol.document(id).delete()) }
+    suspend fun deleteTankReading(id: String): Result<Unit> = writeResult { awaitWrite(tankReadingsCol.document(id).delete()) }
+    suspend fun getTankDelivery(id: String): TankDeliveryEntity? = db.tankDao().deliveriesOnce().firstOrNull { it.id == id }
+    suspend fun getTankWithdrawal(id: String): TankWithdrawalEntity? = db.tankDao().withdrawalsOnce().firstOrNull { it.id == id }
+    suspend fun getTankReading(id: String): TankReadingEntity? = db.tankDao().readingsOnce().firstOrNull { it.id == id }
 
     // ---------------------------------------------------------------- private expense notes
 

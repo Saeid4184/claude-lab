@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Diesel tank: stock card, then the shared list (movements / readings). -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/toolbar_bg"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:titleTextColor="@color/white" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dim_6"
+            android:background="@drawable/shadow_gradient_down" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.ConcreteFactory.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dim_12"
+            android:layout_marginEnd="@dimen/dim_12"
+            android:layout_marginBottom="@dimen/dim_8">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/dim_14">
+
+                <TextView
+                    android:id="@+id/tvStock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:gravity="center"
+                    android:textColor="@color/concrete_900"
+                    android:textSize="@dimen/text_size_20"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressStock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/dim_8"
+                    android:max="1000"
+                    app:trackCornerRadius="@dimen/dim_4"
+                    app:trackThickness="@dimen/dim_10" />
+
+                <TextView
+                    android:id="@+id/tvStockDetail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/dim_6"
+                    android:gravity="center"
+                    android:textColor="@color/concrete_500"
+                    android:textSize="@dimen/text_size_12" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <HorizontalScrollView
+            android:id="@+id/chipScroller"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/dim_12"
+                android:paddingEnd="@dimen/dim_12"
+                app:selectionRequired="true"
+                app:singleLine="true"
+                app:singleSelection="true" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/tvSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/dim_16"
+            android:paddingEnd="@dimen/dim_16"
+            android:paddingBottom="@dimen/dim_4"
+            android:textColor="@color/concrete_500"
+            android:textSize="@dimen/text_size_12"
+            tools:text="۴۸ ماشین — ۴۵ فعال، ۲ در تعمیر" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/dim_12"
+                android:paddingTop="@dimen/dim_4"
+                android:paddingEnd="@dimen/dim_12"
+                android:paddingBottom="@dimen/dim_90"
+                tools:listitem="@layout/item_fleet_entry" />
+
+            <TextView
+                android:id="@+id/tvEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="@dimen/dim_24"
+                android:textColor="@color/concrete_500"
+                android:textSize="@dimen/text_size_14"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="@dimen/dim_16"
+        android:backgroundTint="@color/safety_amber"
+        android:textColor="@color/black"
+        android:visibility="gone"
+        app:icon="@drawable/ic_plus"
+        app:iconTint="@color/black" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

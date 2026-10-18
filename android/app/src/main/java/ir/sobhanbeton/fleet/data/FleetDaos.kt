@@ -92,6 +92,12 @@ interface FuelLogDao {
     @Query("SELECT * FROM fuel_logs WHERE vehicleId = :vehicleId ORDER BY timestamp")
     suspend fun getForVehicle(vehicleId: String): List<FuelLogEntity>
 
+    @Query("SELECT * FROM fuel_logs WHERE source = 'INTERNAL_TANK'")
+    fun tankFuelLive(): LiveData<List<FuelLogEntity>>
+
+    @Query("SELECT * FROM fuel_logs WHERE source = 'INTERNAL_TANK'")
+    suspend fun tankFuelOnce(): List<FuelLogEntity>
+
     /** Every log since [from], for the fleet-wide consumption check. */
     @Query("SELECT * FROM fuel_logs WHERE timestamp >= :from ORDER BY timestamp")
     fun getSinceLive(from: Long): LiveData<List<FuelLogEntity>>
@@ -291,4 +297,46 @@ interface IncidentDao {
 
     @Query("DELETE FROM incidents")
     suspend fun clear()
+}
+
+@Dao
+interface TankDao {
+    @Query("SELECT * FROM tank_config WHERE id = 'main'")
+    fun configLive(): LiveData<TankConfigEntity?>
+
+    @Query("SELECT * FROM tank_config WHERE id = 'main'")
+    suspend fun configOnce(): TankConfigEntity?
+
+    @Query("SELECT * FROM tank_deliveries ORDER BY date DESC")
+    fun deliveriesLive(): LiveData<List<TankDeliveryEntity>>
+
+    @Query("SELECT * FROM tank_deliveries")
+    suspend fun deliveriesOnce(): List<TankDeliveryEntity>
+
+    @Query("SELECT * FROM tank_withdrawals ORDER BY date DESC")
+    fun withdrawalsLive(): LiveData<List<TankWithdrawalEntity>>
+
+    @Query("SELECT * FROM tank_withdrawals")
+    suspend fun withdrawalsOnce(): List<TankWithdrawalEntity>
+
+    @Query("SELECT * FROM tank_readings ORDER BY date DESC")
+    fun readingsLive(): LiveData<List<TankReadingEntity>>
+
+    @Query("SELECT * FROM tank_readings")
+    suspend fun readingsOnce(): List<TankReadingEntity>
+
+    @Upsert suspend fun upsertConfig(config: TankConfigEntity)
+    @Upsert suspend fun upsertDelivery(delivery: TankDeliveryEntity)
+    @Upsert suspend fun upsertWithdrawal(withdrawal: TankWithdrawalEntity)
+    @Upsert suspend fun upsertReading(reading: TankReadingEntity)
+
+    @Query("DELETE FROM tank_config WHERE id = :id") suspend fun deleteConfig(id: String)
+    @Query("DELETE FROM tank_deliveries WHERE id = :id") suspend fun deleteDelivery(id: String)
+    @Query("DELETE FROM tank_withdrawals WHERE id = :id") suspend fun deleteWithdrawal(id: String)
+    @Query("DELETE FROM tank_readings WHERE id = :id") suspend fun deleteReading(id: String)
+
+    @Query("DELETE FROM tank_config") suspend fun clearConfig()
+    @Query("DELETE FROM tank_deliveries") suspend fun clearDeliveries()
+    @Query("DELETE FROM tank_withdrawals") suspend fun clearWithdrawals()
+    @Query("DELETE FROM tank_readings") suspend fun clearReadings()
 }

@@ -115,6 +115,25 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <TextView
+                android:id="@+id/tvTankHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/dim_6"
+                android:paddingStart="@dimen/dim_4"
+                android:paddingEnd="@dimen/dim_4"
+                android:textColor="@color/concrete_500"
+                android:textSize="@dimen/text_size_13"
+                android:visibility="gone" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cbManagerApproval"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/dim_10"
+                android:text="@string/fuel_manager_approval"
+                android:visibility="gone" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilNotes"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"

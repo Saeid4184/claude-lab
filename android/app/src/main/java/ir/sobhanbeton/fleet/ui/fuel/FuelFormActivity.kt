@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import ir.sobhanbeton.fleet.R
@@ -13,6 +14,8 @@ import ir.sobhanbeton.fleet.data.FuelLogEntity
 import ir.sobhanbeton.fleet.data.FuelSource
 import ir.sobhanbeton.fleet.data.FuelStats
 import ir.sobhanbeton.fleet.data.Session
+import ir.sobhanbeton.fleet.data.TankConfigEntity
+import ir.sobhanbeton.fleet.data.TankStock
 import ir.sobhanbeton.fleet.data.VehicleEntity
 import ir.sobhanbeton.fleet.data.VehicleStatus
 import ir.sobhanbeton.fleet.databinding.ActivityFuelFormBinding
@@ -41,6 +44,8 @@ class FuelFormActivity : AppCompatActivity() {
     private var selectedVehicle: VehicleEntity? = null
     private lateinit var date: () -> Long?
     private lateinit var selectedSource: () -> Int
+    private var tankStock: Double? = null
+    private var tankConfig = TankConfigEntity()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +67,11 @@ class FuelFormActivity : AppCompatActivity() {
             vehicles = repository.allVehiclesOnce()
                 .filter { it.statusEnum() != VehicleStatus.OUT_OF_SERVICE || it.id == existing?.vehicleId }
                 .sortedWith(compareBy({ it.categoryEnum().ordinal }, { it.plate }))
+            tankConfig = repository.tankConfigOnce()
+            // Don't count the log being edited as already taken from the tank.
+            tankStock = repository.tankStatusOnce().stock?.let { s ->
+                existing?.takeIf { it.sourceEnum() == FuelSource.INTERNAL_TANK }?.let { s + it.liters } ?: s
+            }
             val preselected = existing?.vehicleId ?: intent.getStringExtra(EXTRA_VEHICLE_ID)
             bind(existing, vehicles.firstOrNull { it.id == preselected })
         }
@@ -82,6 +92,8 @@ class FuelFormActivity : AppCompatActivity() {
 
         val sources = FuelSource.values()
         selectedSource = FormFields.bindDropdown(binding.etSource, sources.map { it.displayName }, (log?.sourceEnum() ?: FuelSource.INTERNAL_TANK).ordinal)
+        binding.etSource.setOnItemClickListener { _, _, _, _ -> refreshTankRules() }
+        binding.cbManagerApproval.isChecked = log?.managerApproved == true
 
         log?.let {
             binding.etLiters.setText(formatLiters(it.liters))
@@ -103,6 +115,32 @@ class FuelFormActivity : AppCompatActivity() {
         binding.tilVehicle.error = null
         binding.tilMeter.hint = getString(R.string.field_meter_at_fuel_unit, v.meterTypeEnum().unit)
         refreshDriverAndMeterHint()
+        refreshTankRules()
+    }
+
+    private fun fromTank(): Boolean = FuelSource.values()[selectedSource()] == FuelSource.INTERNAL_TANK
+
+    /**
+     * Tank rules for the chosen vehicle: show the current stock, require the machinery manager's
+     * approval for mixers (and other vehicles off the priority list), and remind of the order
+     * (loaders → pumps → dump trailers → dump trucks → mixers) when stock is low.
+     */
+    private fun refreshTankRules() {
+        val v = selectedVehicle
+        val tank = fromTank()
+        binding.cbManagerApproval.visibility = if (tank && v != null && TankStock.needsManagerApproval(v)) View.VISIBLE else View.GONE
+        if (!tank) {
+            binding.tvTankHint.visibility = View.GONE
+            return
+        }
+        val lines = mutableListOf<String>()
+        tankStock?.let { lines += getString(R.string.tank_stock_helper, FleetFormat.decimal(it), FleetFormat.decimal(tankConfig.capacityLiters)) }
+        if (v != null && TankStock.lowStockWarning(v, tankStock, tankConfig)) lines += getString(R.string.fuel_tank_low_priority)
+        binding.tvTankHint.visibility = if (lines.isEmpty()) View.GONE else View.VISIBLE
+        binding.tvTankHint.text = lines.joinToString("\n").toPersianDigitsInString()
+        binding.tvTankHint.setTextColor(
+            androidx.core.content.ContextCompat.getColor(this, if (lines.size > 1) R.color.safety_amber else R.color.concrete_500)
+        )
     }
 
     /** Shows who was driving on the chosen date and the last meter reading before it. */
@@ -131,12 +169,19 @@ class FuelFormActivity : AppCompatActivity() {
         val meter = try { binding.etMeter.longOrNull() } catch (e: NumberFormatException) {
             binding.tilMeter.error = getString(R.string.error_number); return
         }
+        val needsApproval = fromTank() && TankStock.needsManagerApproval(vehicle)
+        if (needsApproval && !binding.cbManagerApproval.isChecked) {
+            binding.cbManagerApproval.error = getString(R.string.fuel_manager_approval_required)
+            android.widget.Toast.makeText(this, R.string.fuel_manager_approval_required, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
         val input = (existing ?: FuelLogEntity()).copy(
             vehicleId = vehicle.id,
             timestamp = at,
             liters = liters,
             meterReading = meter,
             source = FuelSource.values()[selectedSource()].name,
+            managerApproved = if (needsApproval) true else null,
             notes = binding.etNotes.textOrNull()
         )
 

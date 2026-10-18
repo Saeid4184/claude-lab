@@ -219,7 +219,7 @@ class FuelActivity : AppCompatActivity() {
         }
         val fills = XlsxWriter.Sheet(
             getString(R.string.fuel_view_fills),
-            listOf("تاریخ", "پلاک", "دسته", "گروه", "راننده", "لیتر", "کارکرد", "منبع", "توضیحات", "ثبت‌کننده"),
+            listOf("تاریخ", "پلاک", "دسته", "گروه", "راننده", "لیتر", "کارکرد", "منبع", "تأیید مدیر", "توضیحات", "ثبت‌کننده"),
             logs.sortedBy { it.timestamp }.map { log ->
                 val v = vehiclesById[log.vehicleId]
                 listOf(
@@ -231,6 +231,7 @@ class FuelActivity : AppCompatActivity() {
                     FuelFormActivity.formatLiters(log.liters),
                     log.meterReading?.toString().orEmpty(),
                     log.sourceEnum().displayName,
+                    if (log.managerApproved == true) "دارد" else "",
                     log.notes.orEmpty(),
                     log.performedByName.orEmpty()
                 )

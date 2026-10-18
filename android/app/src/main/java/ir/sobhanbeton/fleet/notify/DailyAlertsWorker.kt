@@ -19,6 +19,8 @@ import androidx.work.WorkerParameters
 import ir.sobhanbeton.fleet.R
 import ir.sobhanbeton.fleet.data.AppDatabase
 import ir.sobhanbeton.fleet.data.FuelStats
+import ir.sobhanbeton.fleet.data.TankConfigEntity
+import ir.sobhanbeton.fleet.data.TankStock
 import ir.sobhanbeton.fleet.ui.LoginActivity
 import ir.sobhanbeton.fleet.util.AppPreferences
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
@@ -26,7 +28,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Once a day: reads the on-phone mirror (no network needed) and, if anything needs attention,
- * posts one notification summarising it. Silent when everything is fine. Turned on/off in
+ * posts one notification summarising it (services, documents, fuel, tank stock). Silent when everything is fine. Turned on/off in
  * Settings; the Room mirror is emptied at sign-out, so nothing is posted for a signed-out phone.
  */
 class DailyAlertsWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -42,7 +44,9 @@ class DailyAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
             plans = db.servicePlanDao().getAllOnce(),
             serviceLogs = db.serviceLogDao().getAllOnce(),
             fuelLogs = db.fuelLogDao().getInRange(fuelFrom, now),
-            now = now
+            now = now,
+            tankStock = TankStock.status(db.tankDao().deliveriesOnce(), db.tankDao().withdrawalsOnce(), db.tankDao().readingsOnce(), db.fuelLogDao().tankFuelOnce(), now).stock,
+            tankLowLevel = (db.tankDao().configOnce() ?: TankConfigEntity()).lowLevelLiters
         )
         if (!counts.isEmpty) post(applicationContext, DailyAlerts.lines(counts).map { it.toPersianDigitsInString() })
         return Result.success()

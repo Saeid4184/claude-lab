@@ -86,9 +86,24 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate5To6_addsTankAndKeepsFuel() {
+        helper.createDatabase(DB, 5).use { db ->
+            db.execSQL("INSERT INTO fuel_logs (id, vehicleId, vehiclePlate, category, timestamp, liters, source, createdAt) VALUES ('f1', 'v', '1', 'MIXER', 1, 80.0, 'INTERNAL_TANK', 1)")
+        }
+        helper.runMigrationsAndValidate(DB, 6, true, MIGRATION_5_6).use { db ->
+            db.query("SELECT liters, managerApproved FROM fuel_logs WHERE id = 'f1'").use { c ->
+                c.moveToFirst()
+                assertEquals(80.0, c.getDouble(0), 0.001)
+                org.junit.Assert.assertTrue(c.isNull(1))
+            }
+            db.execSQL("INSERT INTO tank_readings (id, date, liters, createdAt) VALUES ('r', 1, 5000.0, 1)")
+        }
+    }
+
+    @Test
     fun allMigrationsReachLatestVersion() {
         helper.createDatabase(DB, 1).close()
-        helper.runMigrationsAndValidate(DB, 5, true, *ALL_MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB, 6, true, *ALL_MIGRATIONS).close()
     }
 
     private companion object {

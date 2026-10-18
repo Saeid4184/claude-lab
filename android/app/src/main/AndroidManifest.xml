@@ -173,6 +173,16 @@
             android:name=".ui.reports.DefectHeatmapActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.tank.TankActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.tank.TankEntryFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
