@@ -466,6 +466,39 @@
     <string name="summary_tank">🛢 موجودی مخزن: %1$s لیتر</string>
     <string name="summary_tank_low">🛢 موجودی مخزن کم است: %1$s لیتر</string>
 
+    <!-- Phase 8: tyre & battery changes, drivers' accommodation -->
+    <string name="home_parts">لاستیک و باتری</string>
+    <string name="home_subtitle_parts">تاریخ تعویض لاستیک هر چرخ و باتری</string>
+    <string name="part_change_add">ثبت تعویض لاستیک / باتری</string>
+    <string name="part_change_edit">ویرایش تعویض</string>
+    <string name="field_part_kind">نوع تعویض</string>
+    <string name="field_change_date">تاریخ تعویض</string>
+    <string name="part_choose_wheels">کدام چرخ‌ها تعویض شد؟</string>
+    <string name="part_choose_vehicle_first">اول ماشین را انتخاب کنید</string>
+    <string name="part_wheels_required">حداقل یک چرخ را انتخاب کنید</string>
+    <string name="part_never_changed">ثبت نشده</string>
+    <string name="part_battery_label">باتری</string>
+    <string name="part_changes_empty">هنوز تعویضی ثبت نشده است</string>
+    <string name="part_changes_export_empty">در این بازه تعویضی ثبت نشده است</string>
+    <string name="part_change_delete_confirm">این تعویض حذف شود؟</string>
+    <string name="part_summary">لاستیک: %1$d بار (%2$d حلقه) · باتری: %3$d بار</string>
+    <string name="home_housing">محل اسکان رانندگان</string>
+    <string name="home_subtitle_housing">اتاق‌ها و رانندگان ساکن هر اتاق</string>
+    <string name="housing_add_room">افزودن اتاق</string>
+    <string name="housing_edit_room">ویرایش اتاق</string>
+    <string name="field_room_name">نام یا شمارهٔ اتاق</string>
+    <string name="field_room_capacity">ظرفیت (نفر، اختیاری)</string>
+    <string name="field_room">اتاق محل اسکان</string>
+    <string name="no_room">بدون اتاق</string>
+    <string name="housing_empty">هنوز اتاقی ثبت نشده است</string>
+    <string name="housing_no_rooms">اول از «محل اسکان رانندگان» اتاق‌ها را ثبت کنید</string>
+    <string name="housing_room_empty">خالی</string>
+    <string name="housing_occupants">ساکنان اتاق</string>
+    <string name="housing_unhoused">رانندگان بدون اتاق</string>
+    <string name="housing_in_room">ساکن %1$s</string>
+    <string name="housing_summary">%1$d اتاق · %2$d ساکن · %3$d راننده بدون اتاق</string>
+    <string name="housing_delete_confirm">اتاق «%1$s» حذف شود؟ ساکنان آن «بدون اتاق» می‌شوند.</string>
+    <string name="housing_no_drivers">راننده‌ای ثبت نشده است</string>
     <string-array name="license_types">
         <item>پایه یکم</item>
         <item>پایه دوم</item>

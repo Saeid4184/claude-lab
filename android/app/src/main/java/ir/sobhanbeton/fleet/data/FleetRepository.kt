@@ -44,6 +44,8 @@ class FleetRepository private constructor(context: Context) {
     private val tankDeliveriesCol = firestore.collection(CloudSync.COLLECTION_TANK_DELIVERIES)
     private val tankWithdrawalsCol = firestore.collection(CloudSync.COLLECTION_TANK_WITHDRAWALS)
     private val tankReadingsCol = firestore.collection(CloudSync.COLLECTION_TANK_READINGS)
+    private val partChangesCol = firestore.collection(CloudSync.COLLECTION_PART_CHANGES)
+    private val housingRoomsCol = firestore.collection(CloudSync.COLLECTION_HOUSING_ROOMS)
 
     fun startSync() = cloudSync.start()
 
@@ -163,6 +165,7 @@ class FleetRepository private constructor(context: Context) {
             name = name,
             currentVehicleId = existing?.currentVehicleId,
             currentVehiclePlate = existing?.currentVehiclePlate,
+            roomId = existing?.roomId, // owned by setRoomOccupants
             status = existing?.status ?: input.status,
             createdAt = existing?.createdAt ?: now,
             updatedAt = now
@@ -183,7 +186,10 @@ class FleetRepository private constructor(context: Context) {
         val now = System.currentTimeMillis()
         val batch = firestore.batch()
         if (status == DriverStatus.LEFT) closeOpenAssignments(batch, vehicleId = null, driverId = driverId, at = now)
-        batch.update(driversCol.document(driverId), mapOf("status" to status.name, "updatedAt" to now))
+        val fields = mutableMapOf<String, Any?>("status" to status.name, "updatedAt" to now)
+        // A driver who has left no longer lives in the accommodation either.
+        if (status == DriverStatus.LEFT) fields["roomId"] = null
+        batch.update(driversCol.document(driverId), fields)
         awaitWrite(batch.commit())
     }
 
@@ -699,6 +705,101 @@ class FleetRepository private constructor(context: Context) {
     suspend fun getTankDelivery(id: String): TankDeliveryEntity? = db.tankDao().deliveriesOnce().firstOrNull { it.id == id }
     suspend fun getTankWithdrawal(id: String): TankWithdrawalEntity? = db.tankDao().withdrawalsOnce().firstOrNull { it.id == id }
     suspend fun getTankReading(id: String): TankReadingEntity? = db.tankDao().readingsOnce().firstOrNull { it.id == id }
+
+    // ---------------------------------------------------------------- tyre & battery changes
+
+    fun partChanges(): LiveData<List<PartChangeEntity>> = db.partChangeDao().getAllLive()
+    fun vehiclePartChanges(vehicleId: String): LiveData<List<PartChangeEntity>> = db.partChangeDao().getForVehicleLive(vehicleId)
+    suspend fun partChangesInRange(from: Long, to: Long): List<PartChangeEntity> = db.partChangeDao().getInRange(from, to)
+    suspend fun getPartChange(id: String): PartChangeEntity? = db.partChangeDao().getById(id)
+
+    /** Creates or corrects a replacement: the date, and for tyres which wheels (at least one). */
+    suspend fun savePartChange(input: PartChangeEntity): Result<String> = writeResult {
+        val vehicle = requireNotNull(db.vehicleDao().getById(input.vehicleId)) { "ماشین را انتخاب کنید" }
+        val kind = input.kindEnum()
+        val wheels = if (kind == PartKind.TIRE) input.wheelCodes().distinct() else emptyList()
+        require(kind != PartKind.TIRE || wheels.isNotEmpty()) { "چرخ تعویض‌شده را انتخاب کنید" }
+        val existing = input.id.takeIf { it.isNotEmpty() }?.let { db.partChangeDao().getById(it) }
+        val ref = if (existing != null) partChangesCol.document(existing.id) else partChangesCol.document()
+        val toWrite = input.copy(
+            id = ref.id,
+            vehiclePlate = vehicle.plate,
+            kind = kind.name,
+            wheels = wheels.joinToString(",").ifEmpty { null },
+            meterReading = null,
+            performedByName = existing?.performedByName ?: Session.currentUserOrGuestLabel(),
+            createdAt = existing?.createdAt ?: System.currentTimeMillis()
+        )
+        awaitWrite(ref.set(toWrite))
+        ref.id
+    }
+
+    suspend fun deletePartChange(id: String): Result<Unit> = writeResult {
+        awaitWrite(partChangesCol.document(id).delete())
+    }
+
+    // ---------------------------------------------------------------- drivers' accommodation
+
+    fun housingRooms(): LiveData<List<HousingRoomEntity>> = db.housingDao().getAllLive()
+    suspend fun getRoom(id: String): HousingRoomEntity? = db.housingDao().getById(id)
+
+    suspend fun saveRoom(input: HousingRoomEntity): Result<String> = writeResult {
+        val name = input.name.trim()
+        require(name.isNotEmpty()) { "نام یا شمارهٔ اتاق را وارد کنید" }
+        require(input.capacity == null || input.capacity > 0) { "ظرفیت باید بزرگ‌تر از صفر باشد" }
+        val existing = input.id.takeIf { it.isNotEmpty() }?.let { db.housingDao().getById(it) }
+        val duplicate = db.housingDao().getAllOnce().firstOrNull { it.id != existing?.id && it.name.trim() == name }
+        require(duplicate == null) { "اتاقی با نام «$name» از قبل ثبت شده است" }
+        val now = System.currentTimeMillis()
+        val ref = if (existing != null) housingRoomsCol.document(existing.id) else housingRoomsCol.document()
+        awaitWrite(ref.set(input.copy(id = ref.id, name = name, createdAt = existing?.createdAt ?: now, updatedAt = now)))
+        ref.id
+    }
+
+    /** Deletes the room; its occupants become "without a room" in the same batch. */
+    suspend fun deleteRoom(id: String): Result<Unit> = writeResult {
+        val now = System.currentTimeMillis()
+        val batch = firestore.batch()
+        db.driverDao().getAllOnce().filter { it.roomId == id }.forEach {
+            batch.update(driversCol.document(it.id), mapOf("roomId" to null, "updatedAt" to now))
+        }
+        batch.delete(housingRoomsCol.document(id))
+        awaitWrite(batch.commit())
+    }
+
+    /**
+     * Makes [driverIds] exactly the occupants of [roomId]: chosen drivers move in (leaving any
+     * other room — a driver lives in one room), current occupants not chosen move out.
+     */
+    suspend fun setRoomOccupants(roomId: String, driverIds: Set<String>): Result<Unit> = writeResult {
+        val room = requireNotNull(db.housingDao().getById(roomId)) { "اتاق پیدا نشد" }
+        require(room.capacity == null || driverIds.size <= room.capacity) { "ظرفیت این اتاق ${room.capacity} نفر است" }
+        val now = System.currentTimeMillis()
+        val batch = firestore.batch()
+        var changes = 0
+        db.driverDao().getAllOnce().forEach { d ->
+            val target = when {
+                d.id in driverIds -> roomId
+                d.roomId == roomId -> null
+                else -> return@forEach
+            }
+            if (d.roomId != target) {
+                batch.update(driversCol.document(d.id), mapOf("roomId" to target, "updatedAt" to now))
+                changes++
+            }
+        }
+        if (changes > 0) awaitWrite(batch.commit())
+    }
+
+    /** Puts one driver in [roomId] (null = out of the accommodation), respecting its capacity. */
+    suspend fun setDriverRoom(driverId: String, roomId: String?): Result<Unit> = writeResult {
+        if (roomId != null) {
+            val room = requireNotNull(db.housingDao().getById(roomId)) { "اتاق پیدا نشد" }
+            val occupants = db.driverDao().getAllOnce().count { it.roomId == roomId && it.id != driverId }
+            require(room.capacity == null || occupants < room.capacity) { "اتاق «${room.name}» پر است (ظرفیت ${room.capacity} نفر)" }
+        }
+        awaitWrite(driversCol.document(driverId).update(mapOf("roomId" to roomId, "updatedAt" to System.currentTimeMillis())))
+    }
 
     // ---------------------------------------------------------------- private expense notes
 

@@ -110,6 +110,55 @@ class ScreensSmokeTest {
     }
 
     @Test fun tank() { open(ir.sobhanbeton.fleet.ui.tank.TankActivity::class.java) }
+    @Test fun partChanges() { open(ir.sobhanbeton.fleet.ui.parts.PartChangesActivity::class.java) }
+    @Test fun partChangeForm() { open(ir.sobhanbeton.fleet.ui.parts.PartChangeFormActivity::class.java) }
+
+    @Test
+    fun partChangeFormOffersThatVehiclesWheelsOnlyForTyres() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        kotlinx.coroutines.runBlocking {
+            ir.sobhanbeton.fleet.data.AppDatabase.getInstance(ctx).vehicleDao()
+                .upsert(ir.sobhanbeton.fleet.data.VehicleEntity(id = "tr", plate = "12345", category = "DUMP_TRUCK", groupLabel = "کمپرسی تریلی"))
+        }
+        val activity = open(
+            ir.sobhanbeton.fleet.ui.parts.PartChangeFormActivity::class.java,
+            Intent(ctx, ir.sobhanbeton.fleet.ui.parts.PartChangeFormActivity::class.java).putExtra("vehicle_id", "tr")
+        )
+        val save = activity.findViewById<TextView>(R.id.btnSave)
+        repeat(50) { if (!save.isEnabled) { Thread.sleep(20); org.robolectric.shadows.ShadowLooper.idleMainLooper() } }
+        val chips = activity.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupWheels)
+        // front pair + three dual axles + spare
+        org.junit.Assert.assertEquals(2 + 3 * 4 + 1, chips.childCount)
+        // Saving a tyre change with no wheel picked is refused on the form.
+        save.performClick()
+        assertFalse(activity.isFinishing)
+        assertTrue(activity.findViewById<android.view.View>(R.id.tvWheelsHint).visibility == android.view.View.VISIBLE)
+    }
+
+    @Test
+    fun housingRendersRoomsAndUnhousedDrivers() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val db = ir.sobhanbeton.fleet.data.AppDatabase.getInstance(ctx)
+        kotlinx.coroutines.runBlocking {
+            db.housingDao().upsert(ir.sobhanbeton.fleet.data.HousingRoomEntity(id = "h1", name = "اتاق ۱", capacity = 2))
+            db.driverDao().upsert(ir.sobhanbeton.fleet.data.DriverEntity(id = "d1", name = "الف", roomId = "h1"))
+            db.driverDao().upsert(ir.sobhanbeton.fleet.data.DriverEntity(id = "d2", name = "ب"))
+            db.driverDao().upsert(ir.sobhanbeton.fleet.data.DriverEntity(id = "d3", name = "ج", status = "LEFT"))
+        }
+        val activity = open(ir.sobhanbeton.fleet.ui.housing.HousingActivity::class.java)
+        val recycler = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler)
+        repeat(100) { if ((recycler.adapter?.itemCount ?: 0) < 3) { Thread.sleep(20); org.robolectric.shadows.ShadowLooper.idleMainLooper() } }
+        // room, "without a room" header, the one active unhoused driver (the one who left is not listed)
+        org.junit.Assert.assertEquals(3, recycler.adapter?.itemCount)
+    }
+
+    @Test
+    fun managerCanOpenHousing() {
+        Session.set(UserProfile(uid = "u2", name = "مدیر", email = "m@x.ir", role = UserRole.MANAGER))
+        val activity = open(ir.sobhanbeton.fleet.ui.housing.HousingActivity::class.java)
+        assertFalse(activity.isFinishing)
+        assertTrue(activity.findViewById<android.view.View>(R.id.fabAdd).visibility != android.view.View.VISIBLE)
+    }
 
     @Test
     fun tankEntryFormEveryMode() {

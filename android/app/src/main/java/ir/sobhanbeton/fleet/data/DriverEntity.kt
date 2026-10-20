@@ -27,6 +27,8 @@ data class DriverEntity(
     val notes: String? = null,
     val currentVehicleId: String? = null,
     val currentVehiclePlate: String? = null,
+    /** The accommodation room the driver lives in ([HousingRoomEntity]), if any. */
+    val roomId: String? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L
 ) {

@@ -20,6 +20,7 @@ import ir.sobhanbeton.fleet.data.DriverEntity
 import ir.sobhanbeton.fleet.data.DriverStatus
 import ir.sobhanbeton.fleet.data.ExpiryAlerts
 import ir.sobhanbeton.fleet.data.FleetRepository
+import ir.sobhanbeton.fleet.data.HousingRoomEntity
 import ir.sobhanbeton.fleet.data.Session
 import ir.sobhanbeton.fleet.databinding.ActivityFleetDetailBinding
 import ir.sobhanbeton.fleet.ui.common.DetailSections
@@ -45,6 +46,7 @@ class DriverDetailActivity : AppCompatActivity() {
     private var history: List<AssignmentEntity> = emptyList()
     private var monthWork: List<DailyWorkEntity> = emptyList()
     private var incidents: List<IncidentEntity> = emptyList()
+    private var rooms: List<HousingRoomEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +88,10 @@ class DriverDetailActivity : AppCompatActivity() {
             incidents = list
             render()
         }
+        repository.housingRooms().observe(this) { list ->
+            rooms = list
+            render()
+        }
     }
 
     private fun render() {
@@ -109,6 +115,11 @@ class DriverDetailActivity : AppCompatActivity() {
             getString(R.string.field_current_vehicle),
             d.currentVehiclePlate?.toPersianDigitsInString() ?: getString(R.string.no_vehicle),
             onClick = d.currentVehicleId?.let { id -> { VehicleDetailActivity.start(this, id) } }
+        )
+        sections.row(
+            getString(R.string.field_room),
+            rooms.firstOrNull { it.id == d.roomId }?.name?.toPersianDigitsInString() ?: getString(R.string.no_room),
+            onClick = if (Session.canEdit()) ({ chooseRoom(d) }) else null
         )
 
         sections.section(getString(R.string.form_section_documents))
@@ -166,6 +177,25 @@ class DriverDetailActivity : AppCompatActivity() {
         val color = millis?.let { FleetFormat.daysUntil(it) }?.takeIf { it <= ExpiryAlerts.WARNING_DAYS }
             ?.let { FleetFormat.expiryColor(it) }
         sections.row(label, FleetFormat.expiry(millis), color)
+    }
+
+    /** Moves the driver into another room (or out of the accommodation). */
+    private fun chooseRoom(d: DriverEntity) {
+        if (rooms.isEmpty()) {
+            android.widget.Toast.makeText(this, R.string.housing_no_rooms, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        val labels = listOf(getString(R.string.no_room)) + rooms.map { it.name.toPersianDigitsInString() }
+        val checked = rooms.indexOfFirst { it.id == d.roomId } + 1
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.field_room)
+            .setSingleChoiceItems(labels.toTypedArray(), checked) { dialog, which ->
+                dialog.dismiss()
+                if (which == checked) return@setSingleChoiceItems
+                lifecycleScope.launch { reportSave(repository.setDriverRoom(d.id, if (which == 0) null else rooms[which - 1].id)) }
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
     }
 
     private fun chooseStatus() {

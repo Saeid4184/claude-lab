@@ -68,6 +68,12 @@ class CloudSync(private val db: AppDatabase) {
         listeners += mirror(COLLECTION_TANK_READINGS,
             upsert = { db.tankDao().upsertReading(it.toObject(TankReadingEntity::class.java)!!) },
             delete = { db.tankDao().deleteReading(it) })
+        listeners += mirror(COLLECTION_PART_CHANGES,
+            upsert = { db.partChangeDao().upsert(it.toObject(PartChangeEntity::class.java)!!) },
+            delete = { db.partChangeDao().deleteById(it) })
+        listeners += mirror(COLLECTION_HOUSING_ROOMS,
+            upsert = { db.housingDao().upsert(it.toObject(HousingRoomEntity::class.java)!!) },
+            delete = { db.housingDao().deleteById(it) })
         // Private to the expert: never mirrored onto the manager's phone (rules would refuse
         // the read anyway).
         if (Session.canEdit()) {
@@ -102,6 +108,8 @@ class CloudSync(private val db: AppDatabase) {
             db.tankDao().clearDeliveries()
             db.tankDao().clearWithdrawals()
             db.tankDao().clearReadings()
+            db.partChangeDao().clear()
+            db.housingDao().clear()
         }
     }
 
@@ -141,5 +149,7 @@ class CloudSync(private val db: AppDatabase) {
         const val COLLECTION_TANK_DELIVERIES = "tankDeliveries"
         const val COLLECTION_TANK_WITHDRAWALS = "tankWithdrawals"
         const val COLLECTION_TANK_READINGS = "tankReadings"
+        const val COLLECTION_PART_CHANGES = "partChanges"
+        const val COLLECTION_HOUSING_ROOMS = "housingRooms"
     }
 }

@@ -37,6 +37,8 @@ import ir.sobhanbeton.fleet.notify.DailyAlertsWorker
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrdersActivity
 import ir.sobhanbeton.fleet.ui.reports.ReportsActivity
 import ir.sobhanbeton.fleet.ui.incidents.IncidentsActivity
+import ir.sobhanbeton.fleet.ui.housing.HousingActivity
+import ir.sobhanbeton.fleet.ui.parts.PartChangesActivity
 import ir.sobhanbeton.fleet.ui.common.FleetFormat
 import ir.sobhanbeton.fleet.ui.services.ServicesActivity
 import ir.sobhanbeton.fleet.ui.tank.TankActivity
@@ -94,11 +96,13 @@ class MainActivity : AppCompatActivity() {
             when (item.destination) {
                 HomeDestination.VEHICLES -> startActivity(Intent(this, VehiclesActivity::class.java))
                 HomeDestination.DRIVERS -> startActivity(Intent(this, DriversActivity::class.java))
+                HomeDestination.HOUSING -> startActivity(Intent(this, HousingActivity::class.java))
                 HomeDestination.FUEL -> startActivity(Intent(this, FuelActivity::class.java))
                 HomeDestination.TANK -> startActivity(Intent(this, TankActivity::class.java))
                 HomeDestination.INSPECTIONS -> startActivity(Intent(this, InspectionsActivity::class.java))
                 HomeDestination.REPAIRS -> startActivity(Intent(this, WorkOrdersActivity::class.java))
                 HomeDestination.SERVICES -> startActivity(Intent(this, ServicesActivity::class.java))
+                HomeDestination.PARTS -> startActivity(Intent(this, PartChangesActivity::class.java))
                 HomeDestination.DAILY_WORK -> startActivity(Intent(this, DailyWorkActivity::class.java))
                 HomeDestination.INCIDENTS -> startActivity(Intent(this, IncidentsActivity::class.java))
                 HomeDestination.REPORTS -> startActivity(Intent(this, ReportsActivity::class.java))
@@ -231,6 +235,10 @@ class MainActivity : AppCompatActivity() {
             R.drawable.ic_driver, R.color.accent_driver, R.color.accent_driver_bg
         ),
         HomeMenuItem(
+            HomeDestination.HOUSING, R.string.home_housing, R.string.home_subtitle_housing,
+            R.drawable.ic_home, R.color.accent_visitor, R.color.accent_visitor_bg
+        ),
+        HomeMenuItem(
             HomeDestination.FUEL, R.string.home_fuel, R.string.home_subtitle_fuel,
             R.drawable.ic_inventory, R.color.accent_item_log, R.color.accent_item_log_bg
         ),
@@ -249,6 +257,10 @@ class MainActivity : AppCompatActivity() {
         HomeMenuItem(
             HomeDestination.SERVICES, R.string.home_services, R.string.home_subtitle_services,
             R.drawable.ic_setup, R.color.accent_personnel, R.color.accent_personnel_bg
+        ),
+        HomeMenuItem(
+            HomeDestination.PARTS, R.string.home_parts, R.string.home_subtitle_parts,
+            R.drawable.ic_tire, R.color.accent_machinery, R.color.accent_machinery_bg
         ),
         HomeMenuItem(
             HomeDestination.DAILY_WORK, R.string.home_daily_work, R.string.home_subtitle_daily_work,

@@ -340,3 +340,38 @@ interface TankDao {
     @Query("DELETE FROM tank_withdrawals") suspend fun clearWithdrawals()
     @Query("DELETE FROM tank_readings") suspend fun clearReadings()
 }
+
+@Dao
+interface PartChangeDao {
+    @Query("SELECT * FROM part_changes ORDER BY date DESC")
+    fun getAllLive(): LiveData<List<PartChangeEntity>>
+
+    @Query("SELECT * FROM part_changes WHERE vehicleId = :vehicleId ORDER BY date DESC")
+    fun getForVehicleLive(vehicleId: String): LiveData<List<PartChangeEntity>>
+
+    @Query("SELECT * FROM part_changes WHERE id = :id")
+    suspend fun getById(id: String): PartChangeEntity?
+
+    @Query("SELECT * FROM part_changes WHERE date BETWEEN :from AND :to ORDER BY date")
+    suspend fun getInRange(from: Long, to: Long): List<PartChangeEntity>
+
+    @Upsert suspend fun upsert(change: PartChangeEntity)
+    @Query("DELETE FROM part_changes WHERE id = :id") suspend fun deleteById(id: String)
+    @Query("DELETE FROM part_changes") suspend fun clear()
+}
+
+@Dao
+interface HousingDao {
+    @Query("SELECT * FROM housing_rooms ORDER BY name")
+    fun getAllLive(): LiveData<List<HousingRoomEntity>>
+
+    @Query("SELECT * FROM housing_rooms WHERE id = :id")
+    suspend fun getById(id: String): HousingRoomEntity?
+
+    @Query("SELECT * FROM housing_rooms ORDER BY name")
+    suspend fun getAllOnce(): List<HousingRoomEntity>
+
+    @Upsert suspend fun upsert(room: HousingRoomEntity)
+    @Query("DELETE FROM housing_rooms WHERE id = :id") suspend fun deleteById(id: String)
+    @Query("DELETE FROM housing_rooms") suspend fun clear()
+}

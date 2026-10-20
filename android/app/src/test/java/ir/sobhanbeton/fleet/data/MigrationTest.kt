@@ -101,9 +101,26 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate6To7_addsPartChangesAndHousingAndKeepsDrivers() {
+        helper.createDatabase(DB, 6).use { db ->
+            db.execSQL("INSERT INTO drivers (id, name, status, createdAt, updatedAt) VALUES ('d1', 'راننده', 'ACTIVE', 1, 1)")
+        }
+        helper.runMigrationsAndValidate(DB, 7, true, MIGRATION_6_7).use { db ->
+            db.query("SELECT name, roomId FROM drivers WHERE id = 'd1'").use { c ->
+                c.moveToFirst()
+                assertEquals("راننده", c.getString(0))
+                org.junit.Assert.assertTrue(c.isNull(1))
+            }
+            db.execSQL("INSERT INTO housing_rooms (id, name, capacity, createdAt, updatedAt) VALUES ('h1', 'اتاق ۱', 4, 1, 1)")
+            db.execSQL("UPDATE drivers SET roomId = 'h1' WHERE id = 'd1'")
+            db.execSQL("INSERT INTO part_changes (id, vehicleId, vehiclePlate, kind, date, wheels, createdAt) VALUES ('p1', 'v', '1', 'TIRE', 1, 'F_L,F_R', 1)")
+        }
+    }
+
+    @Test
     fun allMigrationsReachLatestVersion() {
         helper.createDatabase(DB, 1).close()
-        helper.runMigrationsAndValidate(DB, 6, true, *ALL_MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB, 7, true, *ALL_MIGRATIONS).close()
     }
 
     private companion object {

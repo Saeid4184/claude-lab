@@ -21,9 +21,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         VehicleEntity::class, DriverEntity::class, AssignmentEntity::class, FuelLogEntity::class,
         InspectionEntity::class, WorkOrderEntity::class, ExpenseNoteEntity::class,
         ServicePlanEntity::class, ServiceLogEntity::class, DailyWorkEntity::class, IncidentEntity::class,
-        TankConfigEntity::class, TankDeliveryEntity::class, TankWithdrawalEntity::class, TankReadingEntity::class
+        TankConfigEntity::class, TankDeliveryEntity::class, TankWithdrawalEntity::class, TankReadingEntity::class,
+        PartChangeEntity::class, HousingRoomEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -40,6 +41,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyWorkDao(): DailyWorkDao
     abstract fun incidentDao(): IncidentDao
     abstract fun tankDao(): TankDao
+    abstract fun partChangeDao(): PartChangeDao
+    abstract fun housingDao(): HousingDao
 
     companion object {
         @Volatile
@@ -199,4 +202,22 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+/** v6 → v7 (phase 8): tyre/battery changes, accommodation rooms, drivers.roomId. */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `drivers` ADD COLUMN `roomId` TEXT")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `part_changes` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, `vehiclePlate` TEXT NOT NULL, " +
+                "`kind` TEXT NOT NULL, `date` INTEGER NOT NULL, `wheels` TEXT, `meterReading` INTEGER, `notes` TEXT, " +
+                "`performedByName` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_part_changes_vehicleId` ON `part_changes` (`vehicleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_part_changes_date` ON `part_changes` (`date`)")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `housing_rooms` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `capacity` INTEGER, " +
+                "`notes` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)

@@ -22,7 +22,10 @@ import ir.sobhanbeton.fleet.data.FuelLogEntity
 import ir.sobhanbeton.fleet.data.FuelStats
 import ir.sobhanbeton.fleet.data.InspectionEntity
 import ir.sobhanbeton.fleet.data.InspectionStats
+import ir.sobhanbeton.fleet.data.PartChangeEntity
+import ir.sobhanbeton.fleet.data.PartKind
 import ir.sobhanbeton.fleet.data.PartStatus
+import ir.sobhanbeton.fleet.data.WheelPositions
 import ir.sobhanbeton.fleet.data.ServiceLogEntity
 import ir.sobhanbeton.fleet.data.ServicePlanEntity
 import ir.sobhanbeton.fleet.data.ServiceSchedule
@@ -45,6 +48,7 @@ import ir.sobhanbeton.fleet.ui.inspections.InspectionFormActivity
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrderDetailActivity
 import ir.sobhanbeton.fleet.ui.repairs.WorkOrderFormActivity
 import ir.sobhanbeton.fleet.ui.incidents.IncidentFormActivity
+import ir.sobhanbeton.fleet.ui.parts.PartChangeFormActivity
 import ir.sobhanbeton.fleet.ui.services.ServiceLogFormActivity
 import ir.sobhanbeton.fleet.ui.work.DailyWorkFormActivity
 import ir.sobhanbeton.fleet.util.toPersianDigitsInString
@@ -70,6 +74,7 @@ class VehicleDetailActivity : AppCompatActivity() {
     private var serviceLogs: List<ServiceLogEntity> = emptyList()
     private var work: List<DailyWorkEntity> = emptyList()
     private var incidents: List<IncidentEntity> = emptyList()
+    private var partChanges: List<PartChangeEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -131,6 +136,10 @@ class VehicleDetailActivity : AppCompatActivity() {
             incidents = list
             render()
         }
+        repository.vehiclePartChanges(vehicleId).observe(this) { list ->
+            partChanges = list
+            render()
+        }
     }
 
     private fun render() {
@@ -177,7 +186,7 @@ class VehicleDetailActivity : AppCompatActivity() {
         renderServices(v)
         renderRepairs()
         renderInspection()
-
+        renderPartChanges(v)
         renderIncidents()
 
         sections.section(getString(R.string.detail_section_driver_history))
@@ -259,6 +268,23 @@ class VehicleDetailActivity : AppCompatActivity() {
                 onClick = if (Session.canEdit()) ({ DailyWorkFormActivity.start(this, v.id, r.date) }) else null
             )
         }
+    }
+
+    /** For each wheel the date of its last tyre change, then the last battery change. */
+    private fun renderPartChanges(v: VehicleEntity) {
+        sections.section(getString(R.string.home_parts))
+        val byWheel = WheelPositions.lastChangeByWheel(partChanges)
+        val edit: (PartChangeEntity) -> (() -> Unit)? = { c -> if (Session.canEdit()) ({ PartChangeFormActivity.start(this, changeId = c.id) }) else null }
+        WheelPositions.positionsFor(v).forEach { pos ->
+            val c = byWheel[pos.code]
+            sections.row(pos.label, c?.let { FleetFormat.date(it.date) } ?: getString(R.string.part_never_changed), onClick = c?.let(edit))
+        }
+        val battery = partChanges.filter { it.kindEnum() == PartKind.BATTERY }.maxByOrNull { it.date }
+        sections.row(
+            getString(R.string.part_battery_label),
+            battery?.let { FleetFormat.date(it.date) } ?: getString(R.string.part_never_changed),
+            onClick = battery?.let(edit)
+        )
     }
 
     private fun renderIncidents() {
@@ -418,6 +444,7 @@ class VehicleDetailActivity : AppCompatActivity() {
             menu.add(Menu.NONE, MENU_SERVICE, Menu.NONE, R.string.service_log_add)
             menu.add(Menu.NONE, MENU_WORK, Menu.NONE, R.string.daily_work_add)
             menu.add(Menu.NONE, MENU_INCIDENT, Menu.NONE, R.string.incident_add)
+            menu.add(Menu.NONE, MENU_PART, Menu.NONE, R.string.part_change_add)
             menu.add(Menu.NONE, MENU_EDIT, Menu.NONE, R.string.action_edit)
             menu.add(Menu.NONE, MENU_DELETE, Menu.NONE, R.string.action_delete)
         }
@@ -449,6 +476,10 @@ class VehicleDetailActivity : AppCompatActivity() {
             IncidentFormActivity.start(this, vehicleId = vehicleId)
             true
         }
+        MENU_PART -> {
+            PartChangeFormActivity.start(this, vehicleId = vehicleId)
+            true
+        }
         MENU_EDIT -> {
             VehicleFormActivity.start(this, vehicleId)
             true
@@ -476,6 +507,7 @@ class VehicleDetailActivity : AppCompatActivity() {
         private const val MENU_SERVICE = 6
         private const val MENU_WORK = 7
         private const val MENU_INCIDENT = 8
+        private const val MENU_PART = 9
         private const val RECENT_WORK_ROWS = 7
         private const val RECENT_INCIDENT_ROWS = 5
 
